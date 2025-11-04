@@ -1,0 +1,12 @@
+# Entorno virtual y caché de Python
+.venv/
+__pycache__/
+*.pyc
+
+# Copias locales y archivos que no deben publicarse
+Backup/
+
+# Archivos temporales de editores (opcional, pero útil)
+.vscode/
+*.log
+
