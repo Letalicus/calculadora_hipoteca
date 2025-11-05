@@ -1,18 +1,16 @@
 # ============================================================
 # 🏠 Calculadora Hipotecaria Profesional
-# Versión: 1.1.2
+# Versión: 1.1.3
 # Fecha: 2025-11-05
 # Autor: Letalicus
 #
 # 📌 Resumen de cambios en esta versión:
-# - Lista de comunidades autónomas homogeneizada (ej. “Illes Balears” → “Baleares”, 
-#   “Comunidad Valenciana” → “Valencia”).
-# - Desplegable de CCAA ahora ordenado alfabéticamente en el sidebar.
-# - Eliminado selector duplicado en la parte superior; ahora solo aparece en el sidebar.
+# - Corregida la tabla de amortización simplificada en hipotecas mixtas,
+#   que antes mostraba todo el tramo variable a 0 €.
+# - Ajustado el cálculo de hipoteca mixta: ahora el tramo fijo se calcula
+#   con el plazo total y el tramo variable con el capital pendiente y el
+#   plazo restante, evitando amortizar todo en el tramo fijo.
 # ============================================================
-
-
-
 
 
 
@@ -118,6 +116,23 @@ def dti(cuota_hipoteca, deudas_mensuales, sueldo_neto_mensual):
     val = (cuota_hipoteca + deudas_mensuales) / sueldo_neto_mensual
     return round(val, 6)  # redondeamos a 6 decimales para evitar errores de precisión
 
+def cuota_mixta_peor_tramo(capital, plazo_anios, interes_fijo_pct, euribor_pct, diferencial_pct):
+    """
+    Calcula ambas cuotas (fijo y variable) sobre el plazo total y devuelve:
+    (cuota_peor, cuota_fija, cuota_variable, tramo_peor)
+    """
+    if capital is None or capital <= 0 or plazo_anios <= 0:
+        return None, None, None, None
+
+    r_fijo = (interes_fijo_pct or 0.0)
+    r_var  = ((euribor_pct or 0.0) + (diferencial_pct or 0.0))
+
+    cuota_fija = cuota_prestamo(capital, r_fijo, plazo_anios) or 0.0
+    cuota_var  = cuota_prestamo(capital, r_var,  plazo_anios) or 0.0
+
+    cuota_peor = max(cuota_fija, cuota_var)
+    tramo_peor = "FIJO" if cuota_peor == cuota_fija else "VARIABLE"
+    return cuota_peor, cuota_fija, cuota_var, tramo_peor
 
 
 # =========================
@@ -605,6 +620,8 @@ def calcular_capital_y_gastos(precio, entrada, params, ltv_max=0.80, financiar_c
     }
 
 
+
+
 # =========================
 # MODO 1: Descubrir mi precio máximo (versión corregida)
 # =========================
@@ -627,7 +644,6 @@ if modo == "🔎 Descubrir mi precio máximo":
         "En la práctica, conviene dejar un pequeño margen de seguridad por debajo de este valor."
     )
 
-
     # --- Cálculo de cuota máxima ---
     cuota_max = cuota_maxima(sueldo_neto, deudas_mensuales, ratio=ratio_dti)
 
@@ -645,26 +661,27 @@ if modo == "🔎 Descubrir mi precio máximo":
         ltv_ok = r_mid["ltv_ok"]
         entrada_ok = entrada_usuario >= r_mid["gastos_puros"]
 
-        # Cuota según tipo de hipoteca: usar peor tramo en Mixta
+        # Cuota según tipo de hipoteca: usar peor tramo en Mixta (con plazo total)
         if tipo_hipoteca in ["Fija", "Variable"] and interes_anual:
             cuota_mid = cuota_prestamo(capital_mid, interes_anual, anos_plazo) or 0.0
             dti_mid = dti(cuota_mid, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
-        elif tipo_hipoteca == "Mixta" and interes_fijo and interes_variable:
-            cuota_mid_fijo = cuota_prestamo(capital_mid, interes_fijo, anios_fijo) or 0.0
-            plazo_var_mid = max(0, anos_plazo - anios_fijo)
-            cuota_mid_var = cuota_prestamo(capital_mid, interes_variable, plazo_var_mid) if plazo_var_mid > 0 else 0.0
+
+        elif tipo_hipoteca == "Mixta" and (interes_fijo is not None) and (euribor is not None) and (diferencial is not None):
+            interes_variable_mid = euribor + diferencial
+            cuota_mid_fijo = cuota_prestamo(capital_mid, interes_fijo, anos_plazo) or 0.0
+            cuota_mid_var  = cuota_prestamo(capital_mid, interes_variable_mid, anos_plazo) or 0.0
             cuota_mid = max(cuota_mid_fijo, cuota_mid_var)
             dti_mid = dti(cuota_mid, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
+
         else:
             cuota_mid = 0.0
             dti_mid = 0.0
 
         cuota_ok = cuota_mid <= cuota_max
-        dti_ok = dti_mid <= DTI_FAIL   # ← usamos el umbral global
+        dti_ok = dti_visible(dti_mid) <= DTI_FAIL  # ✅ coherente con es_viable
 
-        # Criterio combinado: entrada suficiente + LTV dentro + DTI dentro
         if entrada_ok and ltv_ok and dti_ok and cuota_ok:
-            precio_maximo = mid   # guardamos el último viable
+            precio_maximo = mid
             low = mid
         else:
             high = mid
@@ -678,8 +695,12 @@ if modo == "🔎 Descubrir mi precio máximo":
     ltv_val = rf["ltv"]
     gastos_puros = rf["gastos_puros"]
 
-    # 🔧 Guardamos el precio máximo en sesión para usarlo en Modo 2 (parche visual)
+    # 🔧 Guardamos el precio máximo en sesión para usarlo en Modo 2
     st.session_state["precio_max_modo1"] = precio_maximo
+
+   
+   
+   
     # =========================
     # 📌 Resultado del modo Descubrir
     # =========================
@@ -694,6 +715,9 @@ if modo == "🔎 Descubrir mi precio máximo":
     elif tipo_hipoteca == "Mixta":
         c3.metric("📈 Interés fijo inicial", pct(interes_fijo))
 
+   
+   
+   
     # =========================
     # 📊 Escenarios de interés (2%–5%)
     # =========================
@@ -728,9 +752,11 @@ if modo == "🔎 Descubrir mi precio máximo":
     elif tipo_hipoteca == "Mixta":
         for interes_pct in ESCENARIOS_INTERES_PCT:
             interes_var_esc = interes_pct / 100
-            cuota_fijo_esc = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
-            plazo_var_esc = max(0, anos_plazo - anios_fijo)
-            cuota_var_esc = cuota_prestamo(capital_hipoteca, interes_var_esc, plazo_var_esc) if plazo_var_esc > 0 else 0.0
+            interes_variable_esc = interes_var_esc + diferencial  # euríbor + diferencial
+
+            # Ambas cuotas calculadas sobre el plazo total
+            cuota_fijo_esc = cuota_prestamo(capital_hipoteca, interes_fijo, anos_plazo) or 0.0
+            cuota_var_esc  = cuota_prestamo(capital_hipoteca, interes_variable_esc, anos_plazo) or 0.0
 
             cuota_peor_esc = max(cuota_fijo_esc, cuota_var_esc)
             dti_peor_esc = dti(cuota_peor_esc, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
@@ -738,12 +764,12 @@ if modo == "🔎 Descubrir mi precio máximo":
 
             if es_viable(cuota_peor_esc, cuota_max, ltv_val, ltv_max, dti_peor_esc):
                 st.success(
-                    f"✅ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: "
+                    f"✅ fijo {pct(interes_fijo)} / var {pct(interes_variable_esc)} → peor tramo {tramo_peor}: "
                     f"cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}"
                 )
             else:
                 st.error(
-                    f"❌ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: "
+                    f"❌ fijo {pct(interes_fijo)} / var {pct(interes_variable_esc)} → peor tramo {tramo_peor}: "
                     f"cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}"
                 )
 
@@ -757,18 +783,17 @@ if modo == "🔎 Descubrir mi precio máximo":
 
 
 
-
-
 # =========================
 # MODO 2: Comprobar una vivienda concreta
 # =========================
 elif modo == "🏠 Comprobar una vivienda concreta":
     st.subheader("🏠 Comprobar una vivienda concreta")
+
     # --- Instrucciones específicas para este modo ---
     st.info(
         "En este modo puedes comprobar la viabilidad de una **vivienda concreta**.\n\n"
         "👉 **Parámetros mínimos a configurar:**\n"
-        "- Precio de la vivienda (€) → por defecto aparece en 0, debes introducir el valor real.\n"
+        "- Precio de la vivienda (€).\n"
         "- Sueldo neto mensual.\n"
         "- Otras deudas mensuales.\n"
         "- Entrada aportada.\n"
@@ -777,13 +802,10 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         "ℹ️ Con estos datos, la calculadora mostrará: LTV, DTI, coste total de la operación, "
         "escenarios de interés, consejos de viabilidad y tablas de amortización.\n\n"
         "⚠️ **Nota importante:** el cálculo del *precio máximo* en la opción **🔎 Descubrir mi precio máximo** "
-        "se obtiene con una búsqueda matemática muy precisa. Esto significa que si introduces aquí exactamente esa cifra, "
-        "la operación puede aparecer como **no viable** debido a redondeos internos o a que el DTI real supera mínimamente el 35 %. "
-        "Considera el resultado de **🔎 Descubrir mi precio máximo** como una **referencia aproximada del límite**: "
-        "en la práctica, si estás en esa frontera, cualquier variación mínima en ingresos, deudas o interés puede hacer que la operación pase de viable a no viable."
+        "es muy preciso matemáticamente. Si introduces aquí exactamente esa cifra, "
+        "puede aparecer como **no viable** por redondeos o porque el DTI real supere mínimamente el 35 %. "
+        "Tómalo como una **referencia aproximada del límite**."
     )
-
-
 
     # 👇 Usamos directamente el precio definido en el sidebar
     r = calcular_capital_y_gastos(
@@ -803,12 +825,17 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
     cuota_max = cuota_maxima(sueldo_neto, deudas_mensuales, ratio=ratio_dti)
 
-    # Cuota estimada según tipo
+    # Cuota estimada según tipo (Mixta: peor tramo calculado sobre el plazo total)
     cuota_estimada = 0.0
+    tramo_peor = None
     if tipo_hipoteca in ["Fija", "Variable"] and interes_anual:
         cuota_estimada = cuota_prestamo(capital_hipoteca, interes_anual, anos_plazo) or 0.0
-    elif tipo_hipoteca == "Mixta" and interes_fijo and interes_variable:
-        cuota_estimada = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
+    elif tipo_hipoteca == "Mixta" and (interes_fijo is not None) and (euribor is not None) and (diferencial is not None):
+        interes_variable_total = euribor + diferencial
+        cuota_fijo_total = cuota_prestamo(capital_hipoteca, interes_fijo, anos_plazo) or 0.0
+        cuota_variable_total = cuota_prestamo(capital_hipoteca, interes_variable_total, anos_plazo) or 0.0
+        cuota_estimada = max(cuota_fijo_total, cuota_variable_total)
+        tramo_peor = "FIJO" if cuota_estimada == cuota_fijo_total else "VARIABLE"
 
     # Calcular DTI (redondeado para coherencia)
     dti_val = round(dti(cuota_estimada, deudas_mensuales, sueldo_neto), 4) if sueldo_neto > 0 else 0.0
@@ -816,16 +843,16 @@ elif modo == "🏠 Comprobar una vivienda concreta":
     # =========================
     # Cálculo de intereses totales y coste total
     # =========================
-    intereses_fijo = intereses_variable = 0.0
+    intereses_totales = 0.0
     if tipo_hipoteca in ["Fija", "Variable"]:
         intereses_totales = (cuota_estimada or 0.0) * anos_plazo * 12 - capital_hipoteca
     elif tipo_hipoteca == "Mixta":
+        # Desglose por tramos (representación pedagógica por periodos)
         cuota_fijo = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
         pagos_fijo = cuota_fijo * anios_fijo * 12
         plazo_var = max(0, anos_plazo - anios_fijo)
         cuota_var = cuota_prestamo(capital_hipoteca, interes_variable, plazo_var) if plazo_var > 0 else 0.0
         pagos_var = cuota_var * plazo_var * 12
-        # Nota: pagos_fijo y pagos_var incluyen capital+intereses
         intereses_totales = (pagos_fijo + pagos_var) - capital_hipoteca
 
     coste_inicial_total = precio + gastos_puros
@@ -844,7 +871,6 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
     st.divider()
 
-
     # =========================
     # 1️⃣ Entrada
     # =========================
@@ -858,14 +884,11 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
     # --- Texto aclaratorio sobre ratios en Modo 2 ---
     st.info(
-    "ℹ️ En este modo se muestran explícitamente los ratios clave de la operación: "
-    "**DTI (endeudamiento)** y **LTV (porcentaje financiado)**. "
-    "Estos son los indicadores que los bancos utilizan para evaluar la viabilidad de la hipoteca. "
-    f"Un DTI ≤ {int(DTI_FAIL*100)} % y un LTV ≤ 80 % suelen considerarse dentro de rangos aceptables."
-)
-
-
-
+        "ℹ️ En este modo se muestran explícitamente los ratios clave de la operación: "
+        "**DTI (endeudamiento)** y **LTV (porcentaje financiado)**. "
+        "Estos son los indicadores que los bancos utilizan para evaluar la viabilidad de la hipoteca. "
+        f"Un DTI ≤ {int(DTI_FAIL*100)} % y un LTV ≤ 80 % suelen considerarse dentro de rangos aceptables."
+    )
 
     # =========================
     # 2️⃣ Hipoteca
@@ -877,23 +900,25 @@ elif modo == "🏠 Comprobar una vivienda concreta":
     c2.metric("📅 Plazo", f"{anos_plazo} años")
     c3.metric("💶 Cuota máxima permitida", eur(cuota_max))
 
-    st.write(f"**Cuota mensual estimada:** {eur(cuota_estimada)}")
+    # Mostrar cuota estimada (en Mixta indicamos el tramo peor)
+    if tipo_hipoteca == "Mixta" and tramo_peor:
+        st.write(f"**Cuota mensual estimada (peor tramo {tramo_peor}):** {eur(cuota_estimada)}")
+    else:
+        st.write(f"**Cuota mensual estimada:** {eur(cuota_estimada)}")
 
     # --- Evaluación combinada de LTV y DTI con es_viable ---
     if es_viable(cuota_estimada, cuota_max, ltv_val, ltv_max, dti_val):
-        # Dentro de rango → matizamos según nivel de DTI
         if dti_val <= DTI_WARN:
             st.success(
                 f"DTI estimado: 🟢 {pct_dti(dti_val)} (Seguro)\n\n"
                 "Con este nivel de endeudamiento y un LTV dentro del límite, la operación se considera solvente."
             )
-        else:  # entre WARN y FAIL
+        else:
             st.warning(
                 f"DTI estimado: 🟡 {pct_dti(dti_val)} (Moderado)\n\n"
                 "La operación es viable, aunque podrían analizar estabilidad, avales o perfil de riesgo."
             )
     else:
-        # No viable → detallamos el motivo
         if not r["ltv_ok"] and dti_visible(dti_val) > DTI_FAIL:
             st.error(
                 f"❌ LTV real {pct(ltv_val)} (máx. {pct(ltv_max)}) y DTI {pct_dti(dti_val)}.\n\n"
@@ -902,8 +927,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         elif not r["ltv_ok"]:
             st.error(
                 f"⚠️ El LTV real ({pct(ltv_val)}) supera el máximo permitido ({pct(ltv_max)}).\n\n"
-                f"Aunque el DTI es {pct_dti(dti_val)} y estaría dentro de rango, la operación no sería viable según criterios bancarios habituales. "
-                "Algunos bancos pueden aceptar hasta el 90 % o incluso el 100 % en casos especiales, pero no es lo estándar."
+                f"Aunque el DTI es {pct_dti(dti_val)} y estaría dentro de rango, la operación no sería viable según criterios bancarios habituales."
             )
         elif dti_visible(dti_val) > DTI_FAIL:
             st.error(
@@ -913,13 +937,6 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             )
 
     st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
-
-
-
-
-
-
-
 
     # =========================
     # 💵 Coste total de la operación (con resumen y desglose opcional)
@@ -982,6 +999,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         intereses_totales = pagos_totales - capital_hipoteca
         capital_amortizado = capital_hipoteca
     elif tipo_hipoteca == "Mixta":
+        # Desglose pedagógico por tramos (aproximación)
         cuota_fijo = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
         pagos_fijo = cuota_fijo * anios_fijo * 12
         plazo_var = max(0, anos_plazo - anios_fijo)
@@ -1012,7 +1030,9 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         use_container_width=True,
         hide_index=True
     )
-    st.caption("El coste inicial incluye precio, impuestos y gastos de compra. Los pagos al banco incluyen solo capital e intereses. El coste total con hipoteca es la suma de ambos mundos.")
+    st.caption("El coste inicial incluye precio, impuestos y gastos de compra. "
+               "Los pagos al banco incluyen solo capital e intereses. "
+               "El coste total con hipoteca es la suma de ambos mundos.")
 
     # --- Expander con el desglose completo ---
     with st.expander("📊 Ver desglose completo"):
@@ -1041,7 +1061,8 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             use_container_width=True,
             hide_index=True
         )
-        st.caption("Este bloque refleja lo que cuesta formalizar la compra: precio, impuestos y gastos iniciales. No incluye las cuotas al banco.")
+        st.caption("Este bloque refleja lo que cuesta formalizar la compra: precio, impuestos y gastos iniciales. "
+                   "No incluye las cuotas al banco.")
 
         # Tabla 2: Pagos al banco
         tabla_banco = pd.DataFrame([
@@ -1062,9 +1083,8 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             use_container_width=True,
             hide_index=True
         )
-        st.caption("Este bloque refleja lo que pagarás en cuotas al banco: capital + intereses. No incluye impuestos ni gastos iniciales.")
-
-
+        st.caption("Este bloque refleja lo que pagarás en cuotas al banco: capital + intereses. "
+                   "No incluye impuestos ni gastos iniciales.")
 
     # =========================
     # 📊 Escenarios de interés (2%–5%)
@@ -1098,10 +1118,12 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
     elif tipo_hipoteca == "Mixta":
         for interes_pct in ESCENARIOS_INTERES_PCT:
-            interes_var_esc = interes_pct / 100
-            cuota_fijo_esc = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
-            plazo_var_esc = max(0, anos_plazo - anios_fijo)
-            cuota_var_esc = cuota_prestamo(capital_hipoteca, interes_var_esc, plazo_var_esc) if plazo_var_esc > 0 else 0.0
+            # Interés variable completo (euríbor + diferencial)
+            interes_variable_esc = (interes_pct / 100) + diferencial
+
+            # Ambas cuotas calculadas sobre el plazo total
+            cuota_fijo_esc = cuota_prestamo(capital_hipoteca, interes_fijo, anos_plazo) or 0.0
+            cuota_var_esc  = cuota_prestamo(capital_hipoteca, interes_variable_esc, anos_plazo) or 0.0
 
             cuota_peor_esc = max(cuota_fijo_esc, cuota_var_esc)
             dti_peor_esc = dti(cuota_peor_esc, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
@@ -1109,24 +1131,18 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
             if es_viable(cuota_peor_esc, cuota_max, ltv_val, ltv_max, dti_peor_esc):
                 st.success(
-                    f"✅ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: "
+                    f"✅ fijo {pct(interes_fijo)} / var {pct(interes_variable_esc)} → peor tramo {tramo_peor}: "
                     f"cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}"
                 )
             else:
                 st.error(
-                    f"❌ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: "
+                    f"❌ fijo {pct(interes_fijo)} / var {pct(interes_variable_esc)} → peor tramo {tramo_peor}: "
                     f"cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}"
                 )
 
         st.caption("En Mixta se valida siempre el tramo más exigente (peor escenario).")
 
     st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
-
-
-
-
-
-
 
     # =========================
     # 💡 Consejos para mejorar la viabilidad
@@ -1136,16 +1152,16 @@ elif modo == "🏠 Comprobar una vivienda concreta":
     consejos = []
 
     if tipo_hipoteca == "Mixta":
-        # Cálculo coherente de ambos tramos
-        cuota_fijo = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
-        plazo_var = max(0, anos_plazo - anios_fijo)
-        cuota_var = cuota_prestamo(capital_hipoteca, interes_variable, plazo_var) if plazo_var > 0 else 0.0
+        # Cálculo coherente de ambos tramos sobre el plazo total
+        interes_variable_total = euribor + diferencial
+        cuota_fijo_total = cuota_prestamo(capital_hipoteca, interes_fijo, anos_plazo) or 0.0
+        cuota_var_total  = cuota_prestamo(capital_hipoteca, interes_variable_total, anos_plazo) or 0.0
 
-        dti_fijo = dti(cuota_fijo, deudas_mensuales, sueldo_neto)
-        dti_variable = dti(cuota_var, deudas_mensuales, sueldo_neto)
+        dti_fijo = dti(cuota_fijo_total, deudas_mensuales, sueldo_neto)
+        dti_variable = dti(cuota_var_total, deudas_mensuales, sueldo_neto)
         dti_peor = max(dti_fijo, dti_variable)
-        cuota_peor = max(cuota_fijo, cuota_var)
-        tramo_peor = "FIJO" if dti_fijo >= dti_variable else "VARIABLE"
+        cuota_peor = max(cuota_fijo_total, cuota_var_total)
+        tramo_peor = "FIJO" if cuota_peor == cuota_fijo_total else "VARIABLE"
 
         # Evaluación con es_viable
         if not es_viable(cuota_peor, cuota_max, ltv_val, ltv_max, dti_peor):
@@ -1171,9 +1187,6 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                 st.warning(c)
             st.info(f"ℹ️ En hipotecas mixtas, la viabilidad se evalúa en ambos tramos. El tramo más exigente es el **{tramo_peor}**.")
 
-        if plazo_var == 0 or cuota_var == 0.0:
-            st.info("ℹ️ El capital quedó totalmente amortizado en el tramo fijo, por lo que no existe tramo variable.")
-
     else:
         # Fija y Variable
         dti_dashboard = dti_val
@@ -1198,57 +1211,65 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             for c in consejos:
                 st.warning(c)
 
-
-
-
-
-
-
-
     # =========================
     # 💸 Simulación de amortización anticipada (opcional)
     # =========================
     st.divider()
     st.subheader("💸 Simulación de amortización anticipada (opcional)")
     st.markdown("""
-ℹ️ **Cómo funciona**  
-- *Año de amortización anticipada*: el año en el que harías un pago extra.  
-- *Cantidad del pago extra*: dinero adicional que aportas en ese momento para reducir la deuda.  
-- *Reducir plazo*: mantienes la cuota, pero terminas de pagar antes.  
-- *Reducir cuota*: mantienes el plazo, pero tu cuota mensual baja.  
-""")
+    ℹ️ **Cómo funciona**  
+    - *Año de amortización anticipada*: el año en el que harías un pago extra.  
+    - *Cantidad del pago extra*: dinero adicional que aportas en ese momento para reducir la deuda.  
+    - *Reducir plazo*: mantienes la cuota, pero terminas de pagar antes.  
+    - *Reducir cuota*: mantienes el plazo, pero tu cuota mensual baja.  
+    """)
 
     simular_amortizacion = st.checkbox("Activar simulación de amortización anticipada", value=False)
+
     if simular_amortizacion and cuota_estimada:
-        anio_extra = st.number_input("Año de amortización anticipada", min_value=1, max_value=anos_plazo, value=5, step=1)
-        pago_extra = st.number_input("Cantidad del pago extra (€)", min_value=0.0, step=1000.0, value=5000.0)
-        mantener_cuota = st.radio("¿Qué prefieres tras amortizar?", ["Reducir plazo", "Reducir cuota"], index=0)
-
-        n_total = anos_plazo * 12
-        n_transcurridos = anio_extra * 12
-        r_mensual = interes_anual / 12 if interes_anual else 0.0
-
-        if r_mensual > 0:
-            capital_pendiente = capital_hipoteca * ((1 + r_mensual) ** n_total - (1 + r_mensual) ** n_transcurridos) / ((1 + r_mensual) ** n_total - 1)
+        if tipo_hipoteca == "Mixta":
+            st.warning("⚠️ La simulación de amortización anticipada solo está disponible para hipotecas Fijas o Variables. "
+                       "En Mixta el cálculo es más complejo y no se incluye en esta versión.")
         else:
-            capital_pendiente = capital_hipoteca * (1 - n_transcurridos / n_total)
+            anio_extra = st.number_input("Año de amortización anticipada", min_value=1, max_value=anos_plazo, value=5, step=1)
+            pago_extra = st.number_input("Cantidad del pago extra (€)", min_value=0.0, step=1000.0, value=5000.0)
+            mantener_cuota = st.radio("¿Qué prefieres tras amortizar?", ["Reducir plazo", "Reducir cuota"], index=0)
 
-        nuevo_capital = max(0.0, capital_pendiente - pago_extra)
+            n_total = anos_plazo * 12
+            n_transcurridos = anio_extra * 12
+            r_mensual = interes_anual / 12 if interes_anual else 0.0
 
-        if mantener_cuota == "Reducir plazo":
-            import math
-            if r_mensual > 0 and cuota_estimada > 0:
-                nuevo_plazo_meses = math.log(cuota_estimada / (cuota_estimada - nuevo_capital * r_mensual)) / math.log(1 + r_mensual)
-                nuevo_plazo_anios = nuevo_plazo_meses / 12
+            # Capital pendiente tras n_transcurridos meses
+            if r_mensual > 0:
+                capital_pendiente = capital_hipoteca * (
+                    ((1 + r_mensual) ** n_total - (1 + r_mensual) ** n_transcurridos)
+                    / ((1 + r_mensual) ** n_total - 1)
+                )
             else:
-                nuevo_plazo_anios = 0
-            st.info(f"📉 Con amortización anticipada de {eur(pago_extra)} en el año {anio_extra}, reduces el plazo a **{nuevo_plazo_anios:.1f} años** manteniendo la misma cuota.")
-        else:
-            nueva_cuota = cuota_prestamo(nuevo_capital, interes_anual, anos_plazo - anio_extra)
-            st.info(f"📉 Con amortización anticipada de {eur(pago_extra)} en el año {anio_extra}, tu nueva cuota sería de **{eur(nueva_cuota)}** manteniendo el plazo original.")
+                capital_pendiente = capital_hipoteca * (1 - n_transcurridos / n_total)
 
+            nuevo_capital = max(0.0, capital_pendiente - pago_extra)
 
-
+            if mantener_cuota == "Reducir plazo":
+                import math
+                if r_mensual > 0 and cuota_estimada > 0:
+                    nuevo_plazo_meses = math.log(
+                        cuota_estimada / (cuota_estimada - nuevo_capital * r_mensual)
+                    ) / math.log(1 + r_mensual)
+                    nuevo_plazo_anios = max(0, nuevo_plazo_meses / 12)
+                else:
+                    nuevo_plazo_anios = 0
+                st.info(
+                    f"📉 Con amortización anticipada de {eur(pago_extra)} en el año {anio_extra}, "
+                    f"reduces el plazo a **{nuevo_plazo_anios:.1f} años** manteniendo la misma cuota."
+                )
+            else:
+                nuevo_plazo_restante = max(1, anos_plazo - anio_extra)
+                nueva_cuota = cuota_prestamo(nuevo_capital, interes_anual, nuevo_plazo_restante)
+                st.info(
+                    f"📉 Con amortización anticipada de {eur(pago_extra)} en el año {anio_extra}, "
+                    f"tu nueva cuota sería de **{eur(nueva_cuota)}** manteniendo el plazo original."
+                )
 
     # =========================
     # 📊 Tabla de amortización simplificada (por años)
@@ -1289,13 +1310,16 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
             df_amort = pd.DataFrame(data)
             st.dataframe(df_amort, use_container_width=True)
+            st.caption("En hipotecas fijas o variables, la cuota se mantiene estable y la tabla muestra cómo cada año disminuye el capital pendiente y los intereses.")
 
         elif tipo_hipoteca == "Mixta":
-            # --- Tramo fijo ---
+            # --- Tramo fijo (cuota calculada con el PLAZO TOTAL) ---
             data_fijo = []
             capital_pendiente = capital_hipoteca
             r_fijo = interes_fijo / 12 if interes_fijo else 0.0
-            cuota_mensual_fijo = cuota_prestamo(capital_pendiente, interes_fijo, anios_fijo) or 0.0
+
+            # ✅ Cuota del tramo fijo calculada con el plazo total, no con anios_fijo
+            cuota_mensual_fijo = cuota_prestamo(capital_pendiente, interes_fijo, anos_plazo) or 0.0
 
             for anio in range(1, anios_fijo + 1):
                 intereses_anio = 0.0
@@ -1321,12 +1345,15 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
             st.markdown("### 🟦 Tramo fijo")
             st.dataframe(pd.DataFrame(data_fijo), use_container_width=True)
+            st.caption("Durante el tramo fijo, la cuota se calcula con el plazo total pactado. Así, al terminar el tramo fijo queda capital pendiente para el tramo variable.")
 
-            # --- Tramo variable ---
+            # --- Tramo variable (recalcular cuota con capital pendiente y PLAZO RESTANTE) ---
             plazo_var = max(0, anos_plazo - anios_fijo)
             if plazo_var > 0 and capital_pendiente > 0:
                 data_var = []
                 r_var = interes_variable / 12 if interes_variable else 0.0
+
+                # ✅ Cuota del tramo variable con el capital pendiente y el plazo restante
                 cuota_mensual_var = cuota_prestamo(capital_pendiente, interes_variable, plazo_var) or 0.0
 
                 for anio in range(1, plazo_var + 1):
@@ -1353,13 +1380,11 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
                 st.markdown("### 🟩 Tramo variable")
                 st.dataframe(pd.DataFrame(data_var), use_container_width=True)
+                st.caption("En el tramo variable, la cuota se recalcula con el nuevo tipo (euríbor + diferencial) y el plazo restante.")
             else:
                 st.markdown("### 🟩 Tramo variable")
                 st.info("El capital quedó totalmente amortizado en el tramo fijo, por lo que no existe tramo variable.")
 
-
-
-    
 
     # =========================
     # 🧮 Resumen compacto (dashboard rápido)
@@ -1368,15 +1393,16 @@ elif modo == "🏠 Comprobar una vivienda concreta":
     st.subheader("🧮 Resumen compacto")
 
     if tipo_hipoteca == "Mixta":
-        cuota_fijo = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
-        plazo_var = max(0, anos_plazo - anios_fijo)
-        cuota_var = cuota_prestamo(capital_hipoteca, interes_variable, plazo_var) if plazo_var > 0 else 0.0
+        # Cálculo coherente: ambos tramos sobre el plazo total
+        interes_variable_total = euribor + diferencial
+        cuota_fijo_total = cuota_prestamo(capital_hipoteca, interes_fijo, anos_plazo) or 0.0
+        cuota_var_total  = cuota_prestamo(capital_hipoteca, interes_variable_total, anos_plazo) or 0.0
 
-        dti_fijo = dti(cuota_fijo, deudas_mensuales, sueldo_neto)
-        dti_variable = dti(cuota_var, deudas_mensuales, sueldo_neto)
+        dti_fijo = dti(cuota_fijo_total, deudas_mensuales, sueldo_neto)
+        dti_variable = dti(cuota_var_total, deudas_mensuales, sueldo_neto)
         dti_peor = max(dti_fijo, dti_variable)
-        cuota_peor = max(cuota_fijo, cuota_var)
-        tramo_peor = "FIJO" if dti_fijo >= dti_variable else "VARIABLE"
+        cuota_peor = max(cuota_fijo_total, cuota_var_total)
+        tramo_peor = "FIJO" if cuota_peor == cuota_fijo_total else "VARIABLE"
 
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("DTI (peor tramo)", semaforo_dti(dti_peor))
@@ -1387,10 +1413,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         st.caption(f"Evaluado en tramo: {tramo_peor}")
         st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
 
-        if plazo_var > 0 and cuota_var > 0.0:
-            st.info("ℹ️ Se muestra el tramo más exigente (peor escenario).")
-        else:
-            st.info("ℹ️ El capital quedó totalmente amortizado en el tramo fijo, por lo que no existe tramo variable.")
+        st.info("ℹ️ Se muestra el tramo más exigente (peor escenario).")
 
         # --- Evaluación combinada rápida con es_viable ---
         if es_viable(cuota_peor, cuota_max, ltv_val, ltv_max, dti_peor):
@@ -1419,8 +1442,6 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                 st.info("ℹ️ Estás en el límite exacto del 35 %. Aunque la operación se considera viable, cualquier variación mínima podría hacerla no viable.")
         else:
             st.error("❌ Resumen: Operación no viable (supera LTV o DTI).")
-
-
 
 
 

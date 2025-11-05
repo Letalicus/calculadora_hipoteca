@@ -54,39 +54,14 @@ Solo necesitas tener una cuenta gratuita en 👉 [https://streamlit.io/cloud](ht
 
 ---
 
-📌 Versiones
+📌 Versión actual
+v1.1.3 — 2025-11-05
 
-Versión actual: v1.1.1 — Uso de vivienda habitual vs. segunda residencia
+- Corregida la tabla de amortización simplificada en hipotecas mixtas.
 
-Nueva opción en el sidebar para indicar si la vivienda es habitual o segunda residencia/inversión.
+- Ajustado el cálculo de hipoteca mixta: tramo fijo con plazo total y tramo variable con capital pendiente + plazo restante.
 
-Ajuste automático de parámetros iniciales:
-
-🏠 Vivienda habitual → LTV máx. 80 %, plazo máx. 30 años.
-
-🏖️ Segunda residencia → LTV máx. 70 %, plazo máx. 25 años.
-
-Mensaje contextual explicando las diferencias de condiciones bancarias.
-
-Conservadas todas las mejoras de la versión 1.1.0.
-
-📌 Versión anterior: v1.1.0 — Validación unificada y mejoras pedagógicas
-
-Validación centralizada con es_viable() en todos los modos y escenarios.
-
-🧮 Resumen compacto con veredicto claro (✅/❌) y aviso pedagógico en el límite del 35,00 %.
-
-💡 Consejos coherentes con es_viable() y aviso específico en el 35,00 %.
-
-Guías actualizadas en 🔎 Descubrir mi precio máximo y 🏠 Comprobar una vivienda concreta para explicar el límite y recomendar margen de seguridad.
-
-Coherencia visual del DTI garantizada (pct_dti y dti_visible sincronizados).
-
-📌 Versión inicial: v1.0.0 — Publicación inicial en repositorio limpio (fase privada)
-
-Baseline inicial con todas las funcionalidades principales.
-
-Repositorio privado hasta futura publicación pública.
+📖 Consulta el historial completo de cambios en el archivo CHANGELOG.md.
 
 ---
 
