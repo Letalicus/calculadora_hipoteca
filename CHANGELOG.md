@@ -1,5 +1,13 @@
 # 📑 CHANGELOG — Calculadora Hipotecaria Profesional
 
+## [1.1.2] - 2025-11-05
+### Changed
+- Lista de comunidades autónomas homogeneizada (ej. “Illes Balears” → “Baleares”, “Comunidad Valenciana” → “Valencia”).
+- Desplegable de CCAA ahora ordenado alfabéticamente.
+- Eliminado selector duplicado en la parte superior; ahora solo aparece en el sidebar.
+
+
+
 ## [1.1.1] — 2025-11-05
 ### Mejoras y cambios principales
 - **Nueva opción de uso de la vivienda en el sidebar:**

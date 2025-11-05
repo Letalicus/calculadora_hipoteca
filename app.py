@@ -1,22 +1,15 @@
 # ============================================================
 # 🏠 Calculadora Hipotecaria Profesional
-# Versión: 1.1.1
+# Versión: 1.1.2
 # Fecha: 2025-11-05
 # Autor: Letalicus
 #
 # 📌 Resumen de cambios en esta versión:
-# - Añadida opción de uso de la vivienda en el sidebar:
-#   • 🏠 Vivienda habitual → mantiene LTV máx. 80 % y plazo máx. 30 años
-#   • 🏖️ Segunda residencia / inversión → ajusta LTV máx. a 70 % y plazo máx. a 25 años
-#   • Se aplica como preset inicial, pero el usuario puede modificar libremente los sliders
-# - Mensaje contextual en pantalla principal explicando las diferencias de condiciones
-# - Conservadas todas las mejoras de la versión 1.1.0:
-#   • Validación unificada con `es_viable()` en todos los modos
-#   • Escenarios de interés, resúmenes y consejos alineados con la validación centralizada
-#   • Avisos pedagógicos en el límite del 35,00 % de DTI
-#   • Guías actualizadas y coherencia visual en ratios DTI/LTV
+# - Lista de comunidades autónomas homogeneizada (ej. “Illes Balears” → “Baleares”, 
+#   “Comunidad Valenciana” → “Valencia”).
+# - Desplegable de CCAA ahora ordenado alfabéticamente en el sidebar.
+# - Eliminado selector duplicado en la parte superior; ahora solo aparece en el sidebar.
 # ============================================================
-
 
 
 
@@ -131,25 +124,33 @@ def dti(cuota_hipoteca, deudas_mensuales, sueldo_neto_mensual):
 # Presets fiscales (simplificados y coherentes)
 # =========================
 PRESETS_IMPUESTOS = {
-    "Madrid": {"nuevo": {"iva": 0.10, "ajd": 0.007}, "segunda": {"itp": 0.06}},
-    "Cataluña": {"nuevo": {"iva": 0.10, "ajd": 0.015}, "segunda": {"itp": 0.10}},
     "Andalucía": {"nuevo": {"iva": 0.10, "ajd": 0.015}, "segunda": {"itp": 0.08}},
-    "Comunidad Valenciana": {"nuevo": {"iva": 0.10, "ajd": 0.015}, "segunda": {"itp": 0.10}},
-    "País Vasco": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.04}},
-    "Navarra": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.06}},
-    "Galicia": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.09}},
-    "Castilla y León": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
-    "Castilla-La Mancha": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.09}},
-    "Murcia": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
-    "La Rioja": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.07}},
-    "Cantabria": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.10}},
     "Aragón": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
     "Asturias": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
-    "Illes Balears": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
-    "Extremadura": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
-    "Ceuta y Melilla": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.06}},
+    "Baleares": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},  # antes "Illes Balears"
     "Canarias": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.06}},  # simplificado
+    "Cantabria": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.10}},
+    "Castilla-La Mancha": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.09}},
+    "Castilla y León": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
+    "Cataluña": {"nuevo": {"iva": 0.10, "ajd": 0.015}, "segunda": {"itp": 0.10}},
+    "Ceuta y Melilla": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.06}},
+    "Extremadura": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
+    "Galicia": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.09}},
+    "La Rioja": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.07}},
+    "Madrid": {"nuevo": {"iva": 0.10, "ajd": 0.007}, "segunda": {"itp": 0.06}},
+    "Murcia": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.08}},
+    "Navarra": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.06}},
+    "País Vasco": {"nuevo": {"iva": 0.10, "ajd": 0.010}, "segunda": {"itp": 0.04}},
+    "Valencia": {"nuevo": {"iva": 0.10, "ajd": 0.015}, "segunda": {"itp": 0.10}},  # antes "Comunidad Valenciana"
 }
+
+
+# =========================
+# Lista de comunidades (ordenada alfabéticamente)
+# =========================
+comunidades = sorted(PRESETS_IMPUESTOS.keys())
+
+
 
 def tipo_impuesto_por_ccaa(ccaa, estado):
     data = PRESETS_IMPUESTOS.get(ccaa, PRESETS_IMPUESTOS["Madrid"])
@@ -159,46 +160,64 @@ def tipo_impuesto_por_ccaa(ccaa, estado):
         return data["segunda"]["itp"]
 
 # =========================
-# Explicaciones fiscales (alineadas con presets)
+# Explicaciones fiscales (alineadas con presets simplificados)
 # =========================
 EXPLICACION_IMPUESTOS = {
     ("Madrid", "Nuevo"): "En Madrid (obra nueva) se aplica IVA 10% + AJD 0,7%.",
     ("Madrid", "Segunda mano"): "En Madrid (segunda mano) se aplica ITP 6%.",
+
     ("Cataluña", "Nuevo"): "En Cataluña (obra nueva) se aplica IVA 10% + AJD 1,5%.",
     ("Cataluña", "Segunda mano"): "En Cataluña (segunda mano) se aplica ITP 10%.",
+
     ("Andalucía", "Nuevo"): "En Andalucía (obra nueva) se aplica IVA 10% + AJD 1,5%.",
     ("Andalucía", "Segunda mano"): "En Andalucía (segunda mano) se aplica ITP 8%.",
-    ("Comunidad Valenciana", "Nuevo"): "En C. Valenciana (obra nueva) IVA 10% + AJD 1,5%.",
-    ("Comunidad Valenciana", "Segunda mano"): "En C. Valenciana (segunda mano) ITP 10%.",
-    ("País Vasco", "Nuevo"): "En País Vasco (obra nueva) IVA 10% + AJD 1,0%.",
-    ("País Vasco", "Segunda mano"): "En País Vasco (segunda mano) ITP 4%.",
-    ("Navarra", "Nuevo"): "En Navarra (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Navarra", "Segunda mano"): "En Navarra (segunda mano) ITP 6%.",
-    ("Galicia", "Nuevo"): "En Galicia (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Galicia", "Segunda mano"): "En Galicia (segunda mano) ITP 9%.",
-    ("Castilla y León", "Nuevo"): "En Castilla y León (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Castilla y León", "Segunda mano"): "En Castilla y León (segunda mano) ITP 8%.",
-    ("Castilla-La Mancha", "Nuevo"): "En Castilla-La Mancha (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Castilla-La Mancha", "Segunda mano"): "En Castilla-La Mancha (segunda mano) ITP 9%.",
-    ("Murcia", "Nuevo"): "En Murcia (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Murcia", "Segunda mano"): "En Murcia (segunda mano) ITP 8%.",
-    ("La Rioja", "Nuevo"): "En La Rioja (obra nueva) IVA 10% + AJD 1,0%.",
-    ("La Rioja", "Segunda mano"): "En La Rioja (segunda mano) ITP 7%.",
-    ("Cantabria", "Nuevo"): "En Cantabria (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Cantabria", "Segunda mano"): "En Cantabria (segunda mano) ITP 10%.",
-    ("Aragón", "Nuevo"): "En Aragón (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Aragón", "Segunda mano"): "En Aragón (segunda mano) ITP 8%.",
-    ("Asturias", "Nuevo"): "En Asturias (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Asturias", "Segunda mano"): "En Asturias (segunda mano) ITP 8%.",
-    ("Illes Balears", "Nuevo"): "En Illes Balears (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Illes Balears", "Segunda mano"): "En Illes Balears (segunda mano) ITP 8%.",
-    ("Extremadura", "Nuevo"): "En Extremadura (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Extremadura", "Segunda mano"): "En Extremadura (segunda mano) ITP 8%.",
-    ("Ceuta y Melilla", "Nuevo"): "En Ceuta y Melilla (obra nueva) IVA 10% + AJD 1,0%.",
-    ("Ceuta y Melilla", "Segunda mano"): "En Ceuta y Melilla (segunda mano) ITP 6%.",
+
+    ("Valencia", "Nuevo"): "En Valencia (obra nueva) se aplica IVA 10% + AJD 1,5%.",
+    ("Valencia", "Segunda mano"): "En Valencia (segunda mano) se aplica ITP 10%.",
+
+    ("País Vasco", "Nuevo"): "En País Vasco (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("País Vasco", "Segunda mano"): "En País Vasco (segunda mano) se aplica ITP 4%.",
+
+    ("Navarra", "Nuevo"): "En Navarra (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Navarra", "Segunda mano"): "En Navarra (segunda mano) se aplica ITP 6%.",
+
+    ("Galicia", "Nuevo"): "En Galicia (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Galicia", "Segunda mano"): "En Galicia (segunda mano) se aplica ITP 9%.",
+
+    ("Castilla y León", "Nuevo"): "En Castilla y León (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Castilla y León", "Segunda mano"): "En Castilla y León (segunda mano) se aplica ITP 8%.",
+
+    ("Castilla-La Mancha", "Nuevo"): "En Castilla-La Mancha (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Castilla-La Mancha", "Segunda mano"): "En Castilla-La Mancha (segunda mano) se aplica ITP 9%.",
+
+    ("Murcia", "Nuevo"): "En Murcia (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Murcia", "Segunda mano"): "En Murcia (segunda mano) se aplica ITP 8%.",
+
+    ("La Rioja", "Nuevo"): "En La Rioja (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("La Rioja", "Segunda mano"): "En La Rioja (segunda mano) se aplica ITP 7%.",
+
+    ("Cantabria", "Nuevo"): "En Cantabria (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Cantabria", "Segunda mano"): "En Cantabria (segunda mano) se aplica ITP 10%.",
+
+    ("Aragón", "Nuevo"): "En Aragón (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Aragón", "Segunda mano"): "En Aragón (segunda mano) se aplica ITP 8%.",
+
+    ("Asturias", "Nuevo"): "En Asturias (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Asturias", "Segunda mano"): "En Asturias (segunda mano) se aplica ITP 8%.",
+
+    ("Baleares", "Nuevo"): "En Baleares (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Baleares", "Segunda mano"): "En Baleares (segunda mano) se aplica ITP 8%.",
+
+    ("Extremadura", "Nuevo"): "En Extremadura (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Extremadura", "Segunda mano"): "En Extremadura (segunda mano) se aplica ITP 8%.",
+
+    ("Ceuta y Melilla", "Nuevo"): "En Ceuta y Melilla (obra nueva) se aplica IVA 10% + AJD 1,0%.",
+    ("Ceuta y Melilla", "Segunda mano"): "En Ceuta y Melilla (segunda mano) se aplica ITP 6%.",
+
     ("Canarias", "Nuevo"): "En Canarias (obra nueva) IVA 10% + AJD 1,0% (simplificación).",
     ("Canarias", "Segunda mano"): "En Canarias (segunda mano) ITP 6% (simplificación).",
 }
+
 
 
 # =========================
@@ -319,14 +338,19 @@ st.sidebar.markdown("---")
 st.sidebar.header("🏠 Datos del inmueble")
 
 ccaa = st.sidebar.selectbox(
-    "Comunidad autónoma", list(PRESETS_IMPUESTOS.keys()), key="ccaa",
+    "Comunidad autónoma", comunidades, key="ccaa",
     help="La fiscalidad de la compra varía por CCAA. Impacta en IVA/ITP y AJD, afectando la entrada necesaria."
 )
+
+# Recuperamos los presets fiscales de la comunidad seleccionada
+presets = PRESETS_IMPUESTOS[ccaa]
+
 
 estado_vivienda = st.sidebar.radio(
     "Estado", ["Nuevo", "Segunda mano"], key="estado_vivienda",
     help="Obra nueva: IVA + AJD. Segunda mano: ITP. Cambia el coste fiscal y la entrada mínima necesaria."
 )
+
 
 # 👇 NUEVO BLOQUE: Uso de la vivienda
 uso_vivienda = st.sidebar.radio(
