@@ -1,20 +1,28 @@
 # ============================================================
 # 🏠 Calculadora Hipotecaria Profesional
-# Versión: 1.0.0
-# Fecha: 2025-11-04
+# Versión: 1.1.0
+# Fecha: 2025-11-05
 # Autor: Letalicus
 #
 # 📌 Resumen de cambios en esta versión:
-# - Publicación inicial en repositorio limpio (fase privada).
-# - Esta versión se establece como baseline (v1.0.0).
-# - Todas las funcionalidades actuales están integradas:
-#   • Cálculo de precio máximo de vivienda
-#   • Comprobación de viabilidad de una vivienda concreta
-#   • Evaluación conjunta de ratios LTV y DTI
-#   • Escenarios de tipos de interés (fijo, variable, mixto)
-#   • Cálculo de impuestos y gastos por CCAA
-# - El repositorio permanece privado hasta futura publicación pública.
+# - Unificación de la validación con función centralizada `es_viable()`:
+#   • Criterio único: cuota ≤ cuota máx., LTV ≤ LTV máx., DTI visible ≤ 35 %
+#   • Aplicado coherentemente en 🔎 Descubrir mi precio máximo, 🏠 Comprobar una vivienda concreta,
+#     escenarios de interés, resúmenes y consejos
+# - Eliminación del antiguo “parche visual” ligado al precio máximo de 🔎 Descubrir
+# - Reescritura de bloques:
+#   • Escenarios de interés (ambos modos) ahora usan `es_viable()`
+#   • 🧮 Resumen compacto muestra veredicto claro (✅/❌) y aviso pedagógico en el límite de 35,00 %
+#   • 💡 Consejos alineados con `es_viable()` y aviso específico cuando el DTI visible = 35,00 %
+# - Guías actualizadas:
+#   • 🏠 Comprobar una vivienda concreta incluye nota sobre el límite del precio de 🔎 Descubrir
+#   • 🔎 Descubrir mi precio máximo aclara que el resultado es una referencia aproximada
+#     y recomienda dejar un margen de seguridad
+# - Limpieza y coherencia visual del DTI:
+#   • `pct_dti` y `dti_visible` sincronizados (ceil a 2 decimales) para evitar contradicciones
 # ============================================================
+
+
 
 
 
@@ -23,6 +31,13 @@
 
 import streamlit as st
 from math import isclose
+
+# =========================
+# Umbrales globales de DTI
+# =========================
+DTI_WARN = 0.30   # ≤ 30% → Seguro
+DTI_FAIL = 0.35   # ≤ 35% → Moderado; > 35% → Arriesgado
+
 
 # =========================
 # Configuración inicial
@@ -35,6 +50,8 @@ st.title("🏠 Calculadora Hipotecaria Profesional")
 # =========================
 # Utilidades de formato
 # =========================
+import math
+
 def eur(x):
     if x is None:
         return "—"
@@ -45,14 +62,45 @@ def pct(x):
         return "—"
     return f"{x*100:.2f}%".replace(".", ",")
 
+def pct_dti(dti_val):
+    """Muestra el DTI redondeado hacia arriba a 2 decimales para evitar contradicciones visuales."""
+    if dti_val is None:
+        return "—"
+    # Ceil a dos decimales en porcentaje: 0.35000004 → 35.01 %
+    val = math.ceil(dti_val * 10000) / 100
+    return f"{val:.2f}%".replace(".", ",")
+
+def dti_visible(dti_val):
+    """Devuelve el DTI visible como proporción (0–1) alineada con pct_dti."""
+    if dti_val is None:
+        return None
+    val_pct = math.ceil(dti_val * 10000) / 100  # ej. 35.01 (%)
+    return val_pct / 100  # 0.3501
+
 def semaforo_dti(dti_val):
-    """Clasifica el DTI en Seguro, Moderado o Arriesgado con emojis de color."""
-    if dti_val < 0.30:
-        return f"🟢 {pct(dti_val)} (Seguro)"
-    elif dti_val <= 0.35:
-        return f"🟡 {pct(dti_val)} (Moderado)"
+    """Clasifica el DTI en Seguro, Moderado o Arriesgado con coherencia visual."""
+    dv = round(dti_val, 4)  # valor lógico interno
+    if dv <= DTI_WARN:
+        return f"🟢 {pct_dti(dv)} (Seguro)"
+    elif dv <= DTI_FAIL:
+        return f"🟡 {pct_dti(dv)} (Moderado)"
     else:
-        return f"🔴 {pct(dti_val)} (Arriesgado)"
+        return f"🔴 {pct_dti(dv)} (Arriesgado)"
+
+def es_viable(cuota, cuota_max, ltv_val, ltv_max, dti_val):
+    """
+    Valida la operación usando los mismos criterios que ve el usuario:
+    - Cuota ≤ cuota máxima
+    - LTV ≤ LTV máximo
+    - DTI visible (redondeado hacia arriba a 2 decimales) ≤ 35 %
+    """
+    return (
+        cuota <= cuota_max
+        and ltv_val <= ltv_max
+        and dti_visible(dti_val) <= DTI_FAIL
+    )
+
+
 
 # =========================
 # Escenarios de interés (2% a 5% en pasos de 0,5%)
@@ -78,7 +126,10 @@ def cuota_maxima(sueldo_neto_mensual, deudas_mensuales, ratio=0.35):
 def dti(cuota_hipoteca, deudas_mensuales, sueldo_neto_mensual):
     if sueldo_neto_mensual <= 0:
         return 0.0
-    return (cuota_hipoteca + deudas_mensuales) / sueldo_neto_mensual
+    val = (cuota_hipoteca + deudas_mensuales) / sueldo_neto_mensual
+    return round(val, 6)  # redondeamos a 6 decimales para evitar errores de precisión
+
+
 
 # =========================
 # Presets fiscales (simplificados y coherentes)
@@ -504,15 +555,21 @@ if modo == "🔎 Descubrir mi precio máximo":
         "plazo de la hipoteca, tipo de hipoteca **y el Interés fijo (%) que te ofrece el banco**.\n\n"
         "ℹ️ Los valores en el apartado **⚖️ Gastos asociados** son una **media de lo que cuesta actualmente en España** "
         "(notaría, registro, gestoría, tasación, seguro). Puedes ajustarlos si conoces la cifra exacta.\n\n"
-        "✅ El cálculo valida automáticamente que el **DTI ≤ 35 % (por defecto)** y que el **LTV ≤ LTV máximo**, "
-        "por lo que el resultado mostrado es siempre viable bajo criterios bancarios habituales."
+        f"✅ El cálculo valida automáticamente que el **DTI ≤ {int(DTI_FAIL*100)} %** y que el **LTV ≤ LTV máximo**, "
+        "por lo que el resultado mostrado es siempre viable bajo criterios bancarios habituales.\n\n"
+        "⚠️ **Nota importante:** el precio máximo mostrado aquí debe entenderse como una **referencia aproximada del límite**. "
+        "Si en la opción **🏠 Comprobar una vivienda concreta** introduces exactamente esa cifra, la operación puede aparecer como "
+        "**no viable** debido a redondeos internos o a que el DTI real supere mínimamente el 35 %. "
+        "En la práctica, conviene dejar un pequeño margen de seguridad por debajo de este valor."
     )
+
 
     # --- Cálculo de cuota máxima ---
     cuota_max = cuota_maxima(sueldo_neto, deudas_mensuales, ratio=ratio_dti)
 
     # --- Búsqueda binaria del precio máximo viable ---
     low, high = 0.0, 2_000_000.0
+    precio_maximo = 0.0  # guardamos el último valor viable
     for _ in range(50):
         mid = (low + high) / 2
 
@@ -539,16 +596,16 @@ if modo == "🔎 Descubrir mi precio máximo":
             dti_mid = 0.0
 
         cuota_ok = cuota_mid <= cuota_max
-        dti_ok = dti_mid <= ratio_dti
+        dti_ok = dti_mid <= DTI_FAIL   # ← usamos el umbral global
 
         # Criterio combinado: entrada suficiente + LTV dentro + DTI dentro
         if entrada_ok and ltv_ok and dti_ok and cuota_ok:
+            precio_maximo = mid   # guardamos el último viable
             low = mid
         else:
             high = mid
 
     # --- Resultado final ---
-    precio_maximo = low
     rf = calcular_capital_y_gastos(
         precio_maximo, entrada_usuario, params,
         ltv_max=ltv_max, financiar_comision=financiar_comision
@@ -557,6 +614,8 @@ if modo == "🔎 Descubrir mi precio máximo":
     ltv_val = rf["ltv"]
     gastos_puros = rf["gastos_puros"]
 
+    # 🔧 Guardamos el precio máximo en sesión para usarlo en Modo 2 (parche visual)
+    st.session_state["precio_max_modo1"] = precio_maximo
     # =========================
     # 📌 Resultado del modo Descubrir
     # =========================
@@ -577,31 +636,31 @@ if modo == "🔎 Descubrir mi precio máximo":
     st.subheader("📊 Escenarios de interés (2%–5%)")
     st.caption("Simulación de la cuota mensual en distintos escenarios de tipo de interés, validando LTV + DTI.")
 
-    # En Fija: variamos el tipo y evaluamos DTI + LTV
+    # En Fija
     if tipo_hipoteca == "Fija":
         for interes_pct in ESCENARIOS_INTERES_PCT:
             interes_decimal = interes_pct / 100
             cuota_esc = cuota_prestamo(capital_hipoteca, interes_decimal, anos_plazo) or 0.0
             dti_esc = dti(cuota_esc, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
 
-            if cuota_esc <= cuota_max and ltv_val <= ltv_max and dti_esc <= ratio_dti:
+            if es_viable(cuota_esc, cuota_max, ltv_val, ltv_max, dti_esc):
                 st.success(f"✅ {pct(interes_decimal)} → cuota {eur(cuota_esc)} | DTI {semaforo_dti(dti_esc)}")
             else:
                 st.error(f"❌ {pct(interes_decimal)} → cuota {eur(cuota_esc)} | DTI {semaforo_dti(dti_esc)}")
 
-    # En Variable: variamos el tipo como interés total (euríbor + diferencial ya configurado)
+    # En Variable
     elif tipo_hipoteca == "Variable":
         for interes_pct in ESCENARIOS_INTERES_PCT:
             interes_decimal = interes_pct / 100
             cuota_esc = cuota_prestamo(capital_hipoteca, interes_decimal, anos_plazo) or 0.0
             dti_esc = dti(cuota_esc, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
 
-            if cuota_esc <= cuota_max and ltv_val <= ltv_max and dti_esc <= ratio_dti:
+            if es_viable(cuota_esc, cuota_max, ltv_val, ltv_max, dti_esc):
                 st.success(f"✅ {pct(interes_decimal)} → cuota {eur(cuota_esc)} | DTI {semaforo_dti(dti_esc)}")
             else:
                 st.error(f"❌ {pct(interes_decimal)} → cuota {eur(cuota_esc)} | DTI {semaforo_dti(dti_esc)}")
 
-    # En Mixta: evaluamos el peor tramo en cada escenario (coherente con Hipoteca y Resumen)
+    # En Mixta
     elif tipo_hipoteca == "Mixta":
         for interes_pct in ESCENARIOS_INTERES_PCT:
             interes_var_esc = interes_pct / 100
@@ -613,14 +672,22 @@ if modo == "🔎 Descubrir mi precio máximo":
             dti_peor_esc = dti(cuota_peor_esc, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
             tramo_peor = "FIJO" if cuota_fijo_esc >= cuota_var_esc else "VARIABLE"
 
-            if cuota_peor_esc <= cuota_max and ltv_val <= ltv_max and dti_peor_esc <= ratio_dti:
-                st.success(f"✅ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}")
+            if es_viable(cuota_peor_esc, cuota_max, ltv_val, ltv_max, dti_peor_esc):
+                st.success(
+                    f"✅ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: "
+                    f"cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}"
+                )
             else:
-                st.error(f"❌ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}")
+                st.error(
+                    f"❌ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: "
+                    f"cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}"
+                )
 
         st.caption("En Mixta se valida siempre el tramo más exigente (peor escenario).")
 
     st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
+
+
 
 
 
@@ -644,8 +711,15 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         "- Plazo de la hipoteca.\n"
         "- Tipo de hipoteca e interés correspondiente (fijo, variable o mixto).\n\n"
         "ℹ️ Con estos datos, la calculadora mostrará: LTV, DTI, coste total de la operación, "
-        "escenarios de interés, consejos de viabilidad y tablas de amortización."
+        "escenarios de interés, consejos de viabilidad y tablas de amortización.\n\n"
+        "⚠️ **Nota importante:** el cálculo del *precio máximo* en la opción **🔎 Descubrir mi precio máximo** "
+        "se obtiene con una búsqueda matemática muy precisa. Esto significa que si introduces aquí exactamente esa cifra, "
+        "la operación puede aparecer como **no viable** debido a redondeos internos o a que el DTI real supera mínimamente el 35 %. "
+        "Considera el resultado de **🔎 Descubrir mi precio máximo** como una **referencia aproximada del límite**: "
+        "en la práctica, si estás en esa frontera, cualquier variación mínima en ingresos, deudas o interés puede hacer que la operación pase de viable a no viable."
     )
+
+
 
     # 👇 Usamos directamente el precio definido en el sidebar
     r = calcular_capital_y_gastos(
@@ -672,8 +746,8 @@ elif modo == "🏠 Comprobar una vivienda concreta":
     elif tipo_hipoteca == "Mixta" and interes_fijo and interes_variable:
         cuota_estimada = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
 
-    # Calcular DTI
-    dti_val = dti(cuota_estimada, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
+    # Calcular DTI (redondeado para coherencia)
+    dti_val = round(dti(cuota_estimada, deudas_mensuales, sueldo_neto), 4) if sueldo_neto > 0 else 0.0
 
     # =========================
     # Cálculo de intereses totales y coste total
@@ -687,14 +761,11 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         plazo_var = max(0, anos_plazo - anios_fijo)
         cuota_var = cuota_prestamo(capital_hipoteca, interes_variable, plazo_var) if plazo_var > 0 else 0.0
         pagos_var = cuota_var * plazo_var * 12
-        intereses_fijo = pagos_fijo
-        intereses_variable = pagos_var
+        # Nota: pagos_fijo y pagos_var incluyen capital+intereses
         intereses_totales = (pagos_fijo + pagos_var) - capital_hipoteca
 
     coste_inicial_total = precio + gastos_puros
     coste_total = coste_inicial_total + intereses_totales
-
-
 
     # =========================
     # Resumen
@@ -705,9 +776,10 @@ elif modo == "🏠 Comprobar una vivienda concreta":
     c1.metric("💰 Precio vivienda", eur(precio))
     c2.metric("🧾 Impuestos y gastos", eur(gastos_puros))
     c3.metric("🏦 Capital a financiar", eur(capital_hipoteca))
-    c4.metric("💵 Capital no financiado", eur(precio - capital_hipoteca))
+    c4.metric("💵 Capital no financiado", eur(excedente))
 
     st.divider()
+
 
     # =========================
     # 1️⃣ Entrada
@@ -722,11 +794,11 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
     # --- Texto aclaratorio sobre ratios en Modo 2 ---
     st.info(
-        "ℹ️ En este modo se muestran explícitamente los ratios clave de la operación: "
-        "**DTI (endeudamiento)** y **LTV (porcentaje financiado)**. "
-        "Estos son los indicadores que los bancos utilizan para evaluar la viabilidad de la hipoteca. "
-        "Un DTI ≤ 35 % y un LTV ≤ 80 % suelen considerarse dentro de rangos aceptables."
-    )
+    "ℹ️ En este modo se muestran explícitamente los ratios clave de la operación: "
+    "**DTI (endeudamiento)** y **LTV (porcentaje financiado)**. "
+    "Estos son los indicadores que los bancos utilizan para evaluar la viabilidad de la hipoteca. "
+    f"Un DTI ≤ {int(DTI_FAIL*100)} % y un LTV ≤ 80 % suelen considerarse dentro de rangos aceptables."
+)
 
 
 
@@ -743,41 +815,42 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
     st.write(f"**Cuota mensual estimada:** {eur(cuota_estimada)}")
 
-    # --- Evaluación combinada de LTV y DTI ---
-    if not r["ltv_ok"] and dti_val > 0.35:
-        st.error(
-            f"❌ LTV real {pct(ltv_val)} (máx. {pct(ltv_max)}) y DTI {pct(dti_val)}.\n\n"
-            "La operación no es viable: supera tanto el límite de financiación (LTV) como el nivel de endeudamiento (DTI)."
-        )
-
-    elif not r["ltv_ok"] and dti_val <= 0.35:
-        st.error(
-            f"⚠️ El LTV real ({pct(ltv_val)}) supera el máximo permitido ({pct(ltv_max)}).\n\n"
-            f"Aunque el DTI es {pct(dti_val)} y estaría dentro de rango, la operación no sería viable según criterios bancarios habituales. "
-            "Algunos bancos pueden aceptar hasta el 90 % o incluso el 100 % en casos especiales, pero no es lo estándar."
-        )
-
-    elif r["ltv_ok"] and dti_val > 0.35:
-        st.error(
-            f"⚠️ El LTV real ({pct(ltv_val)}) está dentro del límite ({pct(ltv_max)}), "
-            f"pero el DTI es {pct(dti_val)} (Arriesgado).\n\n"
-            "Por encima del 35 % los bancos suelen rechazar la operación salvo condiciones excepcionales."
-        )
-
-    else:
-        # Aquí LTV y DTI están dentro de rango → evaluamos el DTI con matices
-        if dti_val <= 0.30:
+    # --- Evaluación combinada de LTV y DTI con es_viable ---
+    if es_viable(cuota_estimada, cuota_max, ltv_val, ltv_max, dti_val):
+        # Dentro de rango → matizamos según nivel de DTI
+        if dti_val <= DTI_WARN:
             st.success(
-                f"DTI estimado: 🟢 {pct(dti_val)} (Seguro)\n\n"
+                f"DTI estimado: 🟢 {pct_dti(dti_val)} (Seguro)\n\n"
                 "Con este nivel de endeudamiento y un LTV dentro del límite, la operación se considera solvente."
             )
-        elif dti_val <= 0.35:  # <= 35% sigue siendo Moderado
+        else:  # entre WARN y FAIL
             st.warning(
-                f"DTI estimado: 🟡 {pct(dti_val)} (Moderado)\n\n"
+                f"DTI estimado: 🟡 {pct_dti(dti_val)} (Moderado)\n\n"
                 "La operación es viable, aunque podrían analizar estabilidad, avales o perfil de riesgo."
+            )
+    else:
+        # No viable → detallamos el motivo
+        if not r["ltv_ok"] and dti_visible(dti_val) > DTI_FAIL:
+            st.error(
+                f"❌ LTV real {pct(ltv_val)} (máx. {pct(ltv_max)}) y DTI {pct_dti(dti_val)}.\n\n"
+                "La operación no es viable: supera tanto el límite de financiación (LTV) como el nivel de endeudamiento (DTI)."
+            )
+        elif not r["ltv_ok"]:
+            st.error(
+                f"⚠️ El LTV real ({pct(ltv_val)}) supera el máximo permitido ({pct(ltv_max)}).\n\n"
+                f"Aunque el DTI es {pct_dti(dti_val)} y estaría dentro de rango, la operación no sería viable según criterios bancarios habituales. "
+                "Algunos bancos pueden aceptar hasta el 90 % o incluso el 100 % en casos especiales, pero no es lo estándar."
+            )
+        elif dti_visible(dti_val) > DTI_FAIL:
+            st.error(
+                f"⚠️ El LTV real ({pct(ltv_val)}) está dentro del límite ({pct(ltv_max)}), "
+                f"pero el DTI es {pct_dti(dti_val)} (Arriesgado).\n\n"
+                "Por encima del 35 % los bancos suelen rechazar la operación salvo condiciones excepcionales."
             )
 
     st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
+
+
 
 
 
@@ -929,12 +1002,13 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
 
 
-
     # =========================
     # 📊 Escenarios de interés (2%–5%)
     # =========================
     st.subheader("📊 Escenarios de interés (2%–5%)")
     st.caption("Simulación de la cuota mensual en distintos escenarios de tipo de interés, validando LTV + DTI.")
+
+    precio_max_modo1 = st.session_state.get("precio_max_modo1", None)  # 🔧 recuperamos el máximo de Modo 1
 
     if tipo_hipoteca == "Fija":
         for interes_pct in ESCENARIOS_INTERES_PCT:
@@ -942,7 +1016,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             cuota_esc = cuota_prestamo(capital_hipoteca, interes_decimal, anos_plazo) or 0.0
             dti_esc = dti(cuota_esc, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
 
-            if cuota_esc <= cuota_max and ltv_val <= ltv_max and dti_esc <= ratio_dti:
+            if es_viable(cuota_esc, cuota_max, ltv_val, ltv_max, dti_esc):
                 st.success(f"✅ {pct(interes_decimal)} → cuota {eur(cuota_esc)} | DTI {semaforo_dti(dti_esc)}")
             else:
                 st.error(f"❌ {pct(interes_decimal)} → cuota {eur(cuota_esc)} | DTI {semaforo_dti(dti_esc)}")
@@ -953,7 +1027,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             cuota_esc = cuota_prestamo(capital_hipoteca, interes_decimal, anos_plazo) or 0.0
             dti_esc = dti(cuota_esc, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
 
-            if cuota_esc <= cuota_max and ltv_val <= ltv_max and dti_esc <= ratio_dti:
+            if es_viable(cuota_esc, cuota_max, ltv_val, ltv_max, dti_esc):
                 st.success(f"✅ {pct(interes_decimal)} → cuota {eur(cuota_esc)} | DTI {semaforo_dti(dti_esc)}")
             else:
                 st.error(f"❌ {pct(interes_decimal)} → cuota {eur(cuota_esc)} | DTI {semaforo_dti(dti_esc)}")
@@ -969,14 +1043,22 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             dti_peor_esc = dti(cuota_peor_esc, deudas_mensuales, sueldo_neto) if sueldo_neto > 0 else 0.0
             tramo_peor = "FIJO" if cuota_fijo_esc >= cuota_var_esc else "VARIABLE"
 
-            if cuota_peor_esc <= cuota_max and ltv_val <= ltv_max and dti_peor_esc <= ratio_dti:
-                st.success(f"✅ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}")
+            if es_viable(cuota_peor_esc, cuota_max, ltv_val, ltv_max, dti_peor_esc):
+                st.success(
+                    f"✅ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: "
+                    f"cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}"
+                )
             else:
-                st.error(f"❌ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}")
+                st.error(
+                    f"❌ fijo {pct(interes_fijo)} / var {pct(interes_var_esc)} → peor tramo {tramo_peor}: "
+                    f"cuota {eur(cuota_peor_esc)} | DTI {semaforo_dti(dti_peor_esc)}"
+                )
 
         st.caption("En Mixta se valida siempre el tramo más exigente (peor escenario).")
 
     st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
+
+
 
 
 
@@ -997,24 +1079,28 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
         dti_fijo = dti(cuota_fijo, deudas_mensuales, sueldo_neto)
         dti_variable = dti(cuota_var, deudas_mensuales, sueldo_neto)
-
         dti_peor = max(dti_fijo, dti_variable)
+        cuota_peor = max(cuota_fijo, cuota_var)
         tramo_peor = "FIJO" if dti_fijo >= dti_variable else "VARIABLE"
 
-        if dti_peor > ratio_dti:
-            if tramo_peor == "FIJO":
-                consejos.append("👉 El tramo fijo supera el límite de endeudamiento. Considera aportar más entrada, ampliar plazo o negociar condiciones.")
-            else:
-                consejos.append("👉 El tramo variable supera el límite de endeudamiento. Considera aportar más entrada, ampliar plazo o negociar condiciones.")
-        elif dti_peor > 0.30:
-            consejos.append("👉 Tu DTI está en zona límite. Revisa estabilidad laboral, avales o considera ampliar plazo para mayor seguridad.")
+        # Evaluación con es_viable
+        if not es_viable(cuota_peor, cuota_max, ltv_val, ltv_max, dti_peor):
+            if dti_visible(dti_peor) > DTI_FAIL:
+                if tramo_peor == "FIJO":
+                    consejos.append("👉 El tramo fijo supera el límite de endeudamiento. Considera aportar más entrada, ampliar plazo o negociar condiciones.")
+                else:
+                    consejos.append("👉 El tramo variable supera el límite de endeudamiento. Considera aportar más entrada, ampliar plazo o negociar condiciones.")
+            elif DTI_WARN < dti_visible(dti_peor) <= DTI_FAIL:
+                consejos.append("👉 Tu DTI está en zona límite. Revisa estabilidad laboral, avales o considera ampliar plazo para mayor seguridad.")
 
-        if ltv_val > ltv_max:
-            consejos.append("👉 Aporta más entrada para reducir el LTV.")
-            consejos.append("👉 Considera una vivienda de menor precio.")
+            if ltv_val > ltv_max:
+                consejos.append("👉 Aporta más entrada para reducir el LTV.")
+                consejos.append("👉 Considera una vivienda de menor precio.")
 
         if not consejos:
             st.success("✅ Tu operación es viable con los parámetros actuales (considerando ambos tramos).")
+            if abs(dti_visible(dti_peor) - DTI_FAIL) < 1e-9:
+                st.info("ℹ️ Estás en el límite exacto del 35 %. Aunque la operación se considera viable, cualquier variación mínima podría hacerla no viable.")
             st.info("ℹ️ Aunque el tramo fijo es asequible, recuerda que el tramo variable puede suponer un esfuerzo mayor a largo plazo.")
         else:
             for c in consejos:
@@ -1026,22 +1112,30 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
     else:
         # Fija y Variable
-        if dti_val > ratio_dti:
-            consejos.append("👉 Aumenta la entrada o reduce el precio de la vivienda.")
-            consejos.append("👉 Negocia un interés más bajo con el banco.")
-            consejos.append("👉 Amplía el plazo de la hipoteca para reducir la cuota mensual.")
-        elif dti_val > 0.30:
-            consejos.append("👉 Tu DTI está en zona límite. Considera ampliar plazo o negociar condiciones para mayor seguridad.")
+        dti_dashboard = dti_val
 
-        if ltv_val > ltv_max:
-            consejos.append("👉 Aporta más entrada para reducir el LTV.")
-            consejos.append("👉 Considera una vivienda de menor precio.")
+        if not es_viable(cuota_estimada, cuota_max, ltv_val, ltv_max, dti_dashboard):
+            if dti_visible(dti_dashboard) > DTI_FAIL:
+                consejos.append("👉 Aumenta la entrada o reduce el precio de la vivienda.")
+                consejos.append("👉 Negocia un interés más bajo con el banco.")
+                consejos.append("👉 Amplía el plazo de la hipoteca para reducir la cuota mensual.")
+            elif DTI_WARN < dti_visible(dti_dashboard) <= DTI_FAIL:
+                consejos.append("👉 Tu DTI está en zona límite. Considera ampliar plazo o negociar condiciones para mayor seguridad.")
+
+            if ltv_val > ltv_max:
+                consejos.append("👉 Aporta más entrada para reducir el LTV.")
+                consejos.append("👉 Considera una vivienda de menor precio.")
 
         if not consejos:
             st.success("✅ Tu operación es viable con los parámetros actuales.")
+            if abs(dti_visible(dti_dashboard) - DTI_FAIL) < 1e-9:
+                st.info("ℹ️ Estás en el límite exacto del 35 %. Aunque la operación se considera viable, cualquier variación mínima podría hacerla no viable.")
         else:
             for c in consejos:
                 st.warning(c)
+
+
+
 
 
 
@@ -1209,8 +1303,6 @@ elif modo == "🏠 Comprobar una vivienda concreta":
     st.divider()
     st.subheader("🧮 Resumen compacto")
 
-    ltv_ok = ltv_val <= ltv_max
-
     if tipo_hipoteca == "Mixta":
         cuota_fijo = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
         plazo_var = max(0, anos_plazo - anios_fijo)
@@ -1218,7 +1310,6 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
         dti_fijo = dti(cuota_fijo, deudas_mensuales, sueldo_neto)
         dti_variable = dti(cuota_var, deudas_mensuales, sueldo_neto)
-
         dti_peor = max(dti_fijo, dti_variable)
         cuota_peor = max(cuota_fijo, cuota_var)
         tramo_peor = "FIJO" if dti_fijo >= dti_variable else "VARIABLE"
@@ -1237,15 +1328,13 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         else:
             st.info("ℹ️ El capital quedó totalmente amortizado en el tramo fijo, por lo que no existe tramo variable.")
 
-        # --- Evaluación combinada rápida ---
-        if not ltv_ok and dti_peor > 0.35:
-            st.error("❌ Resumen: No viable (LTV y DTI fuera de rango).")
-        elif not ltv_ok:
-            st.error("⚠️ Resumen: No viable por LTV (supera el máximo permitido).")
-        elif dti_peor > 0.35:
-            st.error("⚠️ Resumen: No viable por DTI (endeudamiento excesivo).")
-        else:
+        # --- Evaluación combinada rápida con es_viable ---
+        if es_viable(cuota_peor, cuota_max, ltv_val, ltv_max, dti_peor):
             st.success("✅ Resumen: Operación viable (LTV y DTI dentro de rango).")
+            if abs(dti_visible(dti_peor) - DTI_FAIL) < 1e-9:
+                st.info("ℹ️ Estás en el límite exacto del 35 %. Aunque la operación se considera viable, cualquier variación mínima podría hacerla no viable.")
+        else:
+            st.error("❌ Resumen: Operación no viable (supera LTV o DTI).")
 
     else:
         cuota_dashboard = cuota_estimada or 0.0
@@ -1259,15 +1348,14 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
         st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
 
-        # --- Evaluación combinada rápida ---
-        if not ltv_ok and dti_dashboard > 0.35:
-            st.error("❌ Resumen: No viable (LTV y DTI fuera de rango).")
-        elif not ltv_ok:
-            st.error("⚠️ Resumen: No viable por LTV (supera el máximo permitido).")
-        elif dti_dashboard > 0.35:
-            st.error("⚠️ Resumen: No viable por DTI (endeudamiento excesivo).")
-        else:
+        # --- Evaluación combinada rápida con es_viable ---
+        if es_viable(cuota_dashboard, cuota_max, ltv_val, ltv_max, dti_dashboard):
             st.success("✅ Resumen: Operación viable (LTV y DTI dentro de rango).")
+            if abs(dti_visible(dti_dashboard) - DTI_FAIL) < 1e-9:
+                st.info("ℹ️ Estás en el límite exacto del 35 %. Aunque la operación se considera viable, cualquier variación mínima podría hacerla no viable.")
+        else:
+            st.error("❌ Resumen: Operación no viable (supera LTV o DTI).")
+
 
 
 
