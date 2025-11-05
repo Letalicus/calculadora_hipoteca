@@ -6,7 +6,11 @@ __pycache__/
 # Copias locales y archivos que no deben publicarse
 Backup/
 
+
+
 # Archivos temporales de editores (opcional, pero útil)
 .vscode/
 *.log
 
+# Archivos no utilizados actualmente
+DejaVuSans.ttf
