@@ -1,5 +1,22 @@
 # 📑 CHANGELOG — Calculadora Hipotecaria Profesional
 
+## [1.1.1] — 2025-11-05
+### Mejoras y cambios principales
+- **Nueva opción de uso de la vivienda en el sidebar:**
+  - 🏠 Vivienda habitual → mantiene LTV máx. 80 % y plazo máx. 30 años.
+  - 🏖️ Segunda residencia / inversión → ajusta LTV máx. a 70 % y plazo máx. a 25 años.
+  - Se aplica como **preset inicial**, pero el usuario puede modificar libremente los sliders después.
+- **Mensaje contextual en pantalla principal:**
+  - Explica las diferencias de condiciones bancarias entre vivienda habitual y segunda residencia.
+  - Refuerza la pedagogía para que el usuario entienda por qué cambian los parámetros.
+- **Conservadas todas las mejoras de la versión 1.1.0:**
+  - Validación unificada con `es_viable()` en todos los modos.
+  - Escenarios de interés, resúmenes y consejos alineados con la validación centralizada.
+  - Avisos pedagógicos en el límite del 35,00 % de DTI.
+  - Guías actualizadas y coherencia visual en ratios DTI/LTV.
+
+---
+
 ## [1.1.0] — 2025-11-05
 ### Mejoras y cambios principales
 - **Unificación de validación con `es_viable()`:**

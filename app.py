@@ -1,26 +1,22 @@
 # ============================================================
 # 🏠 Calculadora Hipotecaria Profesional
-# Versión: 1.1.0
+# Versión: 1.1.1
 # Fecha: 2025-11-05
 # Autor: Letalicus
 #
 # 📌 Resumen de cambios en esta versión:
-# - Unificación de la validación con función centralizada `es_viable()`:
-#   • Criterio único: cuota ≤ cuota máx., LTV ≤ LTV máx., DTI visible ≤ 35 %
-#   • Aplicado coherentemente en 🔎 Descubrir mi precio máximo, 🏠 Comprobar una vivienda concreta,
-#     escenarios de interés, resúmenes y consejos
-# - Eliminación del antiguo “parche visual” ligado al precio máximo de 🔎 Descubrir
-# - Reescritura de bloques:
-#   • Escenarios de interés (ambos modos) ahora usan `es_viable()`
-#   • 🧮 Resumen compacto muestra veredicto claro (✅/❌) y aviso pedagógico en el límite de 35,00 %
-#   • 💡 Consejos alineados con `es_viable()` y aviso específico cuando el DTI visible = 35,00 %
-# - Guías actualizadas:
-#   • 🏠 Comprobar una vivienda concreta incluye nota sobre el límite del precio de 🔎 Descubrir
-#   • 🔎 Descubrir mi precio máximo aclara que el resultado es una referencia aproximada
-#     y recomienda dejar un margen de seguridad
-# - Limpieza y coherencia visual del DTI:
-#   • `pct_dti` y `dti_visible` sincronizados (ceil a 2 decimales) para evitar contradicciones
+# - Añadida opción de uso de la vivienda en el sidebar:
+#   • 🏠 Vivienda habitual → mantiene LTV máx. 80 % y plazo máx. 30 años
+#   • 🏖️ Segunda residencia / inversión → ajusta LTV máx. a 70 % y plazo máx. a 25 años
+#   • Se aplica como preset inicial, pero el usuario puede modificar libremente los sliders
+# - Mensaje contextual en pantalla principal explicando las diferencias de condiciones
+# - Conservadas todas las mejoras de la versión 1.1.0:
+#   • Validación unificada con `es_viable()` en todos los modos
+#   • Escenarios de interés, resúmenes y consejos alineados con la validación centralizada
+#   • Avisos pedagógicos en el límite del 35,00 % de DTI
+#   • Guías actualizadas y coherencia visual en ratios DTI/LTV
 # ============================================================
+
 
 
 
@@ -321,14 +317,47 @@ st.sidebar.markdown("---")
 
 # === Datos del inmueble ===
 st.sidebar.header("🏠 Datos del inmueble")
+
 ccaa = st.sidebar.selectbox(
     "Comunidad autónoma", list(PRESETS_IMPUESTOS.keys()), key="ccaa",
     help="La fiscalidad de la compra varía por CCAA. Impacta en IVA/ITP y AJD, afectando la entrada necesaria."
 )
+
 estado_vivienda = st.sidebar.radio(
     "Estado", ["Nuevo", "Segunda mano"], key="estado_vivienda",
     help="Obra nueva: IVA + AJD. Segunda mano: ITP. Cambia el coste fiscal y la entrada mínima necesaria."
 )
+
+# 👇 NUEVO BLOQUE: Uso de la vivienda
+uso_vivienda = st.sidebar.radio(
+    "Uso de la vivienda",
+    ["🏠 Vivienda habitual", "🏖️ Segunda residencia / inversión"],
+    key="uso_vivienda",
+    help=(
+        "Los bancos suelen ofrecer hasta el 80 % de financiación y plazos de hasta 30–35 años "
+        "para vivienda habitual.\n\n"
+        "Para segunda residencia/inversión, lo habitual es un 60–70 % de financiación y plazos "
+        "de 20–25 años, con tipos de interés algo más altos."
+    )
+)
+
+# --- Inicializar memoria del último uso seleccionado ---
+if "uso_vivienda_prev" not in st.session_state:
+    st.session_state["uso_vivienda_prev"] = uso_vivienda
+
+# --- Aplicar presets SOLO si el usuario cambia de opción ---
+if uso_vivienda != st.session_state["uso_vivienda_prev"]:
+    if uso_vivienda == "🏠 Vivienda habitual":
+        st.session_state["ltv"] = 80
+        st.session_state["plazo"] = 30
+    elif uso_vivienda == "🏖️ Segunda residencia / inversión":
+        st.session_state["ltv"] = 70
+        st.session_state["plazo"] = 25
+
+# --- Actualizar el valor previo ---
+st.session_state["uso_vivienda_prev"] = uso_vivienda
+
+# 👇 Continúa con la parte de impuestos
 usar_manual = st.sidebar.checkbox(
     "Introducir impuestos manualmente", key="usar_manual",
     help="Marca esta casilla si quieres introducir manualmente IVA/ITP y AJD."
@@ -370,6 +399,17 @@ if explicacion:
     st.sidebar.info(explicacion)
 
 st.sidebar.markdown("---")
+
+# === Mensaje contextual en pantalla principal ===
+if uso_vivienda == "🏖️ Segunda residencia / inversión":
+    st.info(
+        "ℹ️ Has seleccionado **segunda residencia/inversión**. "
+        "Ten en cuenta que los bancos suelen limitar la financiación al 60–70 % del valor "
+        "y reducir el plazo máximo a 20–25 años, aplicando además tipos de interés algo más altos. "
+        "Esto se refleja en los valores iniciales de LTV y plazo, aunque puedes ajustarlos libremente."
+    )
+
+
 
 # === Datos personales y financieros ===
 st.sidebar.header("👤 Datos personales y financieros")
@@ -1367,8 +1407,8 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 # 🧪 Validador profesional dual (modos: rápida / intensa)
 # ============================================================
 
-MODO_VALIDACION = False           # ⬅️ Actívalo a True para ejecutar el validador
-TIPO_VALIDACION = "intensa"        # opciones: "rápida" o "intensa"
+MODO_VALIDACION = False           # ⬅️ Actívalo a "True" para ejecutar el validador; "False" para desactivarlo.
+TIPO_VALIDACION = "intensa"       # opciones: "rápida" o "intensa"
 
 if MODO_VALIDACION:
     import statistics as stats
@@ -1386,9 +1426,9 @@ if MODO_VALIDACION:
 
     # --- Utilidades visuales ---
     def flag_dti(d):
-        if d <= THRESHOLDS["DTI_warn"]:
+        if dti_visible(d) <= THRESHOLDS["DTI_warn"]:
             return "🟢"
-        elif d <= THRESHOLDS["DTI_fail"]:
+        elif dti_visible(d) <= THRESHOLDS["DTI_fail"]:
             return "🟡"
         return "🔴"
 
@@ -1403,13 +1443,13 @@ if MODO_VALIDACION:
     def cuota_para(capital, interes, plazo):
         return cuota_prestamo(capital, interes, plazo) or 0.0
 
-    def is_viable_joint(dti_val, ltv_val, entrada_ok):
-        return entrada_ok and (dti_val <= THRESHOLDS["DTI_fail"]) and (ltv_val <= THRESHOLDS["LTV_warn"])
+    def is_viable_joint(cuota, cuota_max, ltv_val, ltv_max, dti_val, entrada_ok):
+        """Usa la misma lógica que la app: entrada suficiente + es_viable()."""
+        return entrada_ok and es_viable(cuota, cuota_max, ltv_val, ltv_max, dti_val)
 
     def assert_coherencia(fallos, escenario_id, etiqueta, condicion):
         if not condicion:
             fallos.append((escenario_id, etiqueta))
-
     # --- Escenarios base ---
     OPERACIONES_BASE = [
         {"precio": 200000, "entrada": 40000, "ccaa": "Madrid",    "estado": "Segunda mano", "financiar": False},
@@ -1417,6 +1457,7 @@ if MODO_VALIDACION:
         {"precio": 180000, "entrada": 20000, "ccaa": "Andalucía", "estado": "Segunda mano", "financiar": False},
     ]
 
+    # --- Combinaciones de prueba ---
     COMBOS_FIJA = [
         {"interes": 0.02, "plazo": 20, "sueldo": 2500, "deudas": 0},
         {"interes": 0.03, "plazo": 25, "sueldo": 2800, "deudas": 200},
@@ -1432,289 +1473,278 @@ if MODO_VALIDACION:
         {"fijo_anios": 5,  "i_fijo": 0.02,  "i_var": 0.03, "plazo_total": 30, "sueldo": 2800, "deudas": 150},
         {"fijo_anios": 10, "i_fijo": 0.018, "i_var": 0.04, "plazo_total": 30, "sueldo": 3200, "deudas": 250},
     ]
+    
+    
+    # ============================================================
+    # 🔎 Validación rápida
+    # ============================================================
     if TIPO_VALIDACION == "rápida":
-        st.subheader("⚡ Validación rápida (smoke test)")
+        st.subheader("⚡ Validación rápida")
 
-        operaciones = OPERACIONES_BASE[:2]  # dos operaciones representativas
-        combos_basicos = [
-            {"tipo": "Fija",     "interes": 0.03, "plazo": 25, "sueldo": 2800, "deudas": 200},
-            {"tipo": "Variable", "interes": 0.04, "plazo": 25, "sueldo": 2800, "deudas": 150},
-            {"tipo": "Mixta",    "fijo_anios": 10, "i_fijo": 0.02, "i_var": 0.04,
-                                 "plazo_total": 30, "sueldo": 3200, "deudas": 250},
-        ]
+        fallos = []
 
-        dti_vals, ltv_vals = [], []
-        fallos_codigo = []
         escenario_id = 0
+        for op in OPERACIONES_BASE:
+            for combo in COMBOS_FIJA:
+                escenario_id += 1
+                # --- Preparar parámetros ---
+                r = calcular_capital_y_gastos(
+                    op["precio"], op["entrada"], params,
+                    ltv_max=ltv_max, financiar_comision=op["financiar"]
+                )
+                capital = r["capital_final"]
+                ltv_val = r["ltv"]
+                entrada_ok = op["entrada"] >= r["gastos_puros"]
 
-        for op in operaciones:
-            escenario_id += 1
-            st.markdown(f"**Operación {escenario_id}: {op['ccaa']} — {op['estado']} — precio {eur(op['precio'])}**")
+                cuota = cuota_para(capital, combo["interes"], combo["plazo"])
+                cuota_max = cuota_maxima(combo["sueldo"], combo["deudas"])
+                dti_val = dti(cuota, combo["deudas"], combo["sueldo"])
 
-            pipe = calcular_capital_y_gastos(
-                precio=op["precio"], entrada=op["entrada"], params=params,
-                ltv_max=THRESHOLDS["LTV_warn"], financiar_comision=op["financiar"]
-            )
-            capital_final = pipe["capital_final"]
-            ltv_val = pipe["ltv"]
-            entrada_ok = op["entrada"] >= pipe["gastos_puros"]
+                # --- Validación conjunta ---
+                viable = is_viable_joint(cuota, cuota_max, ltv_val, ltv_max, dti_val, entrada_ok)
 
-            for c in combos_basicos:
-                if c["tipo"] == "Fija":
-                    cuota = cuota_para(capital_final, c["interes"], c["plazo"])
-                    dti_val = dti(cuota, c["deudas"], c["sueldo"])
-                    st.write(f"Fija {pct(c['interes'])}, {c['plazo']}a → cuota {eur(cuota)} "
-                             f"→ DTI {pct(dti_val)} {flag_dti(dti_val)} | "
-                             f"LTV {pct(ltv_val)} {flag_ltv(ltv_val)}")
+                # --- Comprobaciones de coherencia ---
+                assert_coherencia(fallos, escenario_id, "Entrada insuficiente aceptada", not (not entrada_ok and viable))
+                assert_coherencia(fallos, escenario_id, "DTI > 35% aceptado", not (dti_visible(dti_val) > THRESHOLDS["DTI_fail"] and viable))
+                assert_coherencia(fallos, escenario_id, "LTV > límite aceptado", not (ltv_val > ltv_max and viable))
 
-                elif c["tipo"] == "Variable":
-                    cuota = cuota_para(capital_final, c["interes"], c["plazo"])
-                    dti_val = dti(cuota, c["deudas"], c["sueldo"])
-                    st.write(f"Variable {pct(c['interes'])}, {c['plazo']}a → cuota {eur(cuota)} "
-                             f"→ DTI {pct(dti_val)} {flag_dti(dti_val)} | "
-                             f"LTV {pct(ltv_val)} {flag_ltv(ltv_val)}")
+                # --- Mostrar resultados ---
+                st.write(
+                    f"Escenario {escenario_id}: Precio {eur(op['precio'])}, Entrada {eur(op['entrada'])}, "
+                    f"Sueldo {eur(combo['sueldo'])}, Deudas {eur(combo['deudas'])}, "
+                    f"Interés {pct(combo['interes'])}, Plazo {combo['plazo']} años → "
+                    f"Cuota {eur(cuota)} | DTI {flag_dti(dti_val)} {pct_dti(dti_val)} | "
+                    f"LTV {flag_ltv(ltv_val)} {pct(ltv_val)} → "
+                    f"{'✅ Viable' if viable else '❌ No viable'}"
+                )
 
-                else:  # Mixta
-                    plazo_var = max(0, c["plazo_total"] - c["fijo_anios"])
-                    cuota_fijo = cuota_para(capital_final, c["i_fijo"], c["fijo_anios"])
-                    cuota_var = cuota_para(capital_final, c["i_var"], plazo_var) if plazo_var > 0 else 0.0
-                    dti_val = max(
-                        dti(cuota_fijo, c["deudas"], c["sueldo"]),
-                        dti(cuota_var, c["deudas"], c["sueldo"])
-                    )
-                    st.write(f"Mixta fijo {pct(c['i_fijo'])} {c['fijo_anios']}a / "
-                             f"var {pct(c['i_var'])} {plazo_var}a → peor DTI {pct(dti_val)} {flag_dti(dti_val)} | "
-                             f"LTV {pct(ltv_val)} {flag_ltv(ltv_val)}")
-
-                # Mostrar viabilidad conjunta
-                if not is_viable_joint(dti_val, ltv_val, entrada_ok):
-                    st.error("❌ Viabilidad conjunta")
-                else:
-                    st.success("✅ Viabilidad conjunta")
-
-                dti_vals.append(dti_val)
-                ltv_vals.append(ltv_val)
-
-        # --- Resumen final ---
-        st.subheader("📈 Resumen validación rápida")
-        if dti_vals:
-            st.write(f"DTI medio: {pct(stats.mean(dti_vals))} | "
-                     f"máx: {pct(max(dti_vals))} | mín: {pct(min(dti_vals))}")
-        if ltv_vals:
-            st.write(f"LTV medio: {pct(stats.mean(ltv_vals))} | "
-                     f"máx: {pct(max(ltv_vals))} | mín: {pct(min(ltv_vals))}")
-
-        if fallos_codigo:
-            st.error(f"❌ Se han detectado incoherencias de código en {len(fallos_codigo)} escenarios. Revisa app.py.")
-            for esc_id, label in fallos_codigo:
-                st.error(f"   → Escenario {esc_id}: {label}")
+        if not fallos:
+            st.success("✅ Validación rápida completada sin incoherencias detectadas")
         else:
-            st.success("✅ Todo correcto: la calculadora cumple en todos los escenarios. "
-                       "No se han detectado incoherencias de código.")
+            st.error(f"❌ Se detectaron {len(fallos)} incoherencias en validación rápida")
+            for f in fallos:
+                st.write(f"Escenario {f[0]} → {f[1]}")
+    
+    
+    # ============================================================
+    # 🔍 Validación intensa (auditoría total)
+    # ============================================================
     elif TIPO_VALIDACION == "intensa":
         st.subheader("🔍 Validación intensa (auditoría total)")
 
-        operaciones = OPERACIONES_BASE  # todas las operaciones base
-        dti_vals, ltv_vals = [], []
-        fallos_codigo = []
+        fallos = []
+        dti_hist, ltv_hist = [], []
         escenario_id = 0
 
         # --- Parámetros de sensibilidad y monotonicidad ---
-        SENSIBILIDADES = [-0.02, -0.01, +0.01, +0.02]   # ±100 pb, ±200 pb
+        SENSIBILIDADES_INTERES = [-0.02, -0.01, +0.01, +0.02]   # ±100 pb, ±200 pb
         MONO_INTERESES = [0.02, 0.03, 0.04, 0.05]
         MONO_PLAZOS    = [15, 20, 25, 30]
 
-        # --- Validación de precio máximo ---
-        def validar_precio_maximo(pipe_base, sueldo, deudas, interes, plazo):
-            low, high = 60000, 800000
-            mejor_precio = None
-            for _ in range(20):
-                mid = (low + high) // 2
-                pipe = calcular_capital_y_gastos(
-                    precio=mid, entrada=pipe_base["entrada"], params=params,
-                    ltv_max=THRESHOLDS["LTV_warn"], financiar_comision=False
-                )
+        # --- Función auxiliar para precio máximo coherente (binaria) ---
+        def precio_maximo_coherente(entrada, sueldo, deudas, interes, plazo, ltv_lim, financiar=False):
+            low, high = 60000.0, 900000.0
+            mejor = 0.0
+            for _ in range(25):
+                mid = (low + high) / 2
+                pipe = calcular_capital_y_gastos(mid, entrada, params, ltv_max=ltv_lim, financiar_comision=financiar)
                 capital = pipe["capital_final"]
-                ltv_mid = pipe["ltv"]
-                entrada_ok_mid = pipe_base["entrada"] >= pipe["gastos_puros"]
-                cuota_mid = cuota_para(capital, interes, plazo)
-                dti_mid = dti(cuota_mid, deudas, sueldo)
-                viable_mid = is_viable_joint(dti_mid, ltv_mid, entrada_ok_mid)
-                if viable_mid:
-                    mejor_precio = mid
-                    low = mid + 1000
+                ltv_val = pipe["ltv"]
+                entrada_ok = entrada >= pipe["gastos_puros"]
+                cuota = cuota_para(capital, interes, plazo)
+                cuota_max = cuota_maxima(sueldo, deudas)
+                dti_val = dti(cuota, deudas, sueldo)
+                viable = is_viable_joint(cuota, cuota_max, ltv_val, ltv_lim, dti_val, entrada_ok)
+                if viable:
+                    mejor = mid
+                    low = mid
                 else:
-                    high = mid - 1000
-            return mejor_precio
+                    high = mid
+            return mejor
 
-        # --- Escenarios aleatorios ---
-        def generar_escenario_aleatorio():
-            precio   = random.choice([130000, 180000, 220000, 300000, 380000])
-            entrada  = random.choice([15000, 30000, 50000, 70000])
-            ccaa     = random.choice(["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia"])
-            estado   = random.choice(["Obra nueva", "Segunda mano"])
-            financiar = random.choice([True, False])
-            return {"precio": precio, "entrada": entrada, "ccaa": ccaa, "estado": estado, "financiar": financiar}
-
-        ESCENARIOS_ALEATORIOS = [generar_escenario_aleatorio() for _ in range(6)]
-        # --- Bucle principal de operaciones ---
-        for op in operaciones:
+        # --- Bucle principal de operaciones base ---
+        for op in OPERACIONES_BASE:
             escenario_id += 1
-            st.subheader(f"OPERACIÓN {escenario_id}: {op['ccaa']} — {op['estado']} — precio {eur(op['precio'])}")
+            st.markdown(f"**OPERACIÓN {escenario_id}: {op['ccaa']} — {op['estado']} — precio {eur(op['precio'])}**")
 
-            pipe = calcular_capital_y_gastos(
-                precio=op["precio"], entrada=op["entrada"], params=params,
-                ltv_max=THRESHOLDS["LTV_warn"], financiar_comision=op["financiar"]
-            )
-
+            pipe = calcular_capital_y_gastos(op["precio"], op["entrada"], params, ltv_max=ltv_max, financiar_comision=op["financiar"])
             capital_final = pipe["capital_final"]
-            ltv_val = pipe["ltv"]
+            ltv_val_base = pipe["ltv"]
             entrada_ok = op["entrada"] >= pipe["gastos_puros"]
 
-            # --- Hipoteca Fija ---
+            # === Hipoteca Fija ===
+            st.markdown("### 🟦 Hipoteca fija")
             for c in COMBOS_FIJA:
                 cuota = cuota_para(capital_final, c["interes"], c["plazo"])
+                cuota_max = cuota_maxima(c["sueldo"], c["deudas"])
                 dti_val = dti(cuota, c["deudas"], c["sueldo"])
-                st.write(f"Fija {pct(c['interes'])}, {c['plazo']}a → cuota {eur(cuota)} "
-                         f"→ DTI {pct(dti_val)} {flag_dti(dti_val)} | LTV {pct(ltv_val)} {flag_ltv(ltv_val)}")
+                viable = is_viable_joint(cuota, cuota_max, ltv_val_base, ltv_max, dti_val, entrada_ok)
 
-                if not is_viable_joint(dti_val, ltv_val, entrada_ok):
-                    st.error("❌ Viabilidad conjunta (Entrada + LTV + DTI)")
-                else:
-                    st.success("✅ Viabilidad conjunta")
+                dti_hist.append(dti_val); ltv_hist.append(ltv_val_base)
+                st.write(f"Fija {pct(c['interes'])}, {c['plazo']}a → cuota {eur(cuota)} → "
+                         f"DTI {flag_dti(dti_val)} {pct_dti(dti_val)} | LTV {flag_ltv(ltv_val_base)} {pct(ltv_val_base)} → "
+                         f"{'✅ Viable' if viable else '❌ No viable'}")
 
-                dti_vals.append(dti_val)
-                ltv_vals.append(ltv_val)
+                # Coherencias básicas
+                assert_coherencia(fallos, escenario_id, "Entrada insuficiente aceptada (Fija)", not (not entrada_ok and viable))
+                assert_coherencia(fallos, escenario_id, "DTI > 35% aceptado (Fija)", not (dti_visible(dti_val) > THRESHOLDS["DTI_fail"] and viable))
+                assert_coherencia(fallos, escenario_id, "LTV > Límite aceptado (Fija)", not (ltv_val_base > ltv_max and viable))
 
-            # --- Hipoteca Variable ---
+            # === Hipoteca Variable ===
+            st.markdown("### 🟧 Hipoteca variable")
             for c in COMBOS_VARIABLE:
                 cuota = cuota_para(capital_final, c["interes"], c["plazo"])
+                cuota_max = cuota_maxima(c["sueldo"], c["deudas"])
                 dti_val = dti(cuota, c["deudas"], c["sueldo"])
-                st.write(f"Variable {pct(c['interes'])}, {c['plazo']}a → cuota {eur(cuota)} "
-                         f"→ DTI {pct(dti_val)} {flag_dti(dti_val)} | LTV {pct(ltv_val)} {flag_ltv(ltv_val)}")
+                viable = is_viable_joint(cuota, cuota_max, ltv_val_base, ltv_max, dti_val, entrada_ok)
 
-                if not is_viable_joint(dti_val, ltv_val, entrada_ok):
-                    st.error("❌ Viabilidad conjunta (Entrada + LTV + DTI)")
-                else:
-                    st.success("✅ Viabilidad conjunta")
+                dti_hist.append(dti_val); ltv_hist.append(ltv_val_base)
+                st.write(f"Variable {pct(c['interes'])}, {c['plazo']}a → cuota {eur(cuota)} → "
+                         f"DTI {flag_dti(dti_val)} {pct_dti(dti_val)} | LTV {flag_ltv(ltv_val_base)} {pct(ltv_val_base)} → "
+                         f"{'✅ Viable' if viable else '❌ No viable'}")
 
-                dti_vals.append(dti_val)
-                ltv_vals.append(ltv_val)
+                assert_coherencia(fallos, escenario_id, "Entrada insuficiente aceptada (Variable)", not (not entrada_ok and viable))
+                assert_coherencia(fallos, escenario_id, "DTI > 35% aceptado (Variable)", not (dti_visible(dti_val) > THRESHOLDS["DTI_fail"] and viable))
+                assert_coherencia(fallos, escenario_id, "LTV > Límite aceptado (Variable)", not (ltv_val_base > ltv_max and viable))
 
-            # --- Hipoteca Mixta ---
+            # === Hipoteca Mixta (peor tramo) ===
+            st.markdown("### 🟩 Hipoteca mixta (peor tramo)")
             for c in COMBOS_MIXTA:
                 plazo_var = max(0, c["plazo_total"] - c["fijo_anios"])
                 cuota_fijo = cuota_para(capital_final, c["i_fijo"], c["fijo_anios"])
                 cuota_var  = cuota_para(capital_final, c["i_var"], plazo_var) if plazo_var > 0 else 0.0
-
-                dti_fijo = dti(cuota_fijo, c["deudas"], c["sueldo"])
-                dti_var  = dti(cuota_var,  c["deudas"], c["sueldo"])
-                dti_peor = max(dti_fijo, dti_var)
+                dti_fijo   = dti(cuota_fijo, c["deudas"], c["sueldo"])
+                dti_var    = dti(cuota_var,  c["deudas"], c["sueldo"])
+                dti_peor   = max(dti_fijo, dti_var)
+                cuota_peor = max(cuota_fijo, cuota_var)
                 tramo_peor = "FIJO" if dti_fijo >= dti_var else "VARIABLE"
+                cuota_max  = cuota_maxima(c["sueldo"], c["deudas"])
 
-                st.write(f"Mixta fijo {pct(c['i_fijo'])} {c['fijo_anios']}a / "
-                         f"var {pct(c['i_var'])} {plazo_var}a → peor {tramo_peor}: "
-                         f"DTI {pct(dti_peor)} {flag_dti(dti_peor)} | LTV {pct(ltv_val)} {flag_ltv(ltv_val)}")
+                viable = is_viable_joint(cuota_peor, cuota_max, ltv_val_base, ltv_max, dti_peor, entrada_ok)
 
-                if not is_viable_joint(dti_peor, ltv_val, entrada_ok):
-                    st.error("❌ Viabilidad conjunta (Entrada + LTV + DTI peor tramo)")
-                else:
-                    st.success("✅ Viabilidad conjunta")
+                dti_hist.append(dti_peor); ltv_hist.append(ltv_val_base)
+                st.write(f"Mixta fijo {pct(c['i_fijo'])} {c['fijo_anios']}a / var {pct(c['i_var'])} {plazo_var}a → peor tramo {tramo_peor}: "
+                         f"cuota {eur(cuota_peor)} → DTI {flag_dti(dti_peor)} {pct_dti(dti_peor)} | LTV {flag_ltv(ltv_val_base)} {pct(ltv_val_base)} → "
+                         f"{'✅ Viable' if viable else '❌ No viable'}")
 
-                dti_vals.append(dti_peor)
-                ltv_vals.append(ltv_val)
-            # --- Sensibilidad de interés ---
-            for delta in SENSIBILIDADES:
+                assert_coherencia(fallos, escenario_id, "Entrada insuficiente aceptada (Mixta)", not (not entrada_ok and viable))
+                assert_coherencia(fallos, escenario_id, "DTI > 35% aceptado (Mixta)", not (dti_visible(dti_peor) > THRESHOLDS["DTI_fail"] and viable))
+                assert_coherencia(fallos, escenario_id, "LTV > Límite aceptado (Mixta)", not (ltv_val_base > ltv_max and viable))
+
+            # === Sensibilidad de interés (sobre un caso representativo) ===
+            st.markdown("### 🧪 Sensibilidad de interés (fija 25 años, sueldo 2800, deudas 200)")
+            for delta in SENSIBILIDADES_INTERES:
                 interes_base = 0.03 + delta
-                cuota_sens = cuota_para(capital_final, interes_base, 25)
-                dti_sens = dti(cuota_sens, 200, 2800)
-                st.caption(f"Sensibilidad interés {pct(interes_base)} (δ={pct(delta)}): "
-                           f"cuota {eur(cuota_sens)} → DTI {pct(dti_sens)} {flag_dti(dti_sens)}")
-                dti_vals.append(dti_sens)
-                ltv_vals.append(ltv_val)
+                cuota_sens   = cuota_para(capital_final, interes_base, 25)
+                dti_sens     = dti(cuota_sens, 200, 2800)
+                cuota_max    = cuota_maxima(2800, 200)
+                viable_sens  = is_viable_joint(cuota_sens, cuota_max, ltv_val_base, ltv_max, dti_sens, entrada_ok)
 
-            # --- Monotonicidad de interés ---
+                dti_hist.append(dti_sens); ltv_hist.append(ltv_val_base)
+                st.caption(f"Sensibilidad interés {pct(interes_base)} (δ={pct(delta)}): cuota {eur(cuota_sens)} → "
+                           f"DTI {flag_dti(dti_sens)} {pct_dti(dti_sens)} | LTV {flag_ltv(ltv_val_base)} {pct(ltv_val_base)} → "
+                           f"{'✅ Viable' if viable_sens else '❌ No viable'}")
+
+            # === Monotonicidad de interés: DTI debe crecer al subir el tipo ===
+            st.markdown("### 📈 Monotonicidad: interés ↑ ⇒ DTI ↑")
             prev_dti = None
             for i in MONO_INTERESES:
                 cuota_mono = cuota_para(capital_final, i, 25)
-                dti_mono = dti(cuota_mono, 200, 2800)
-                st.caption(f"Monotonicidad interés {pct(i)} → DTI {pct(dti_mono)}")
-                if prev_dti is not None and dti_mono < prev_dti:
-                    fallos_codigo.append((escenario_id, "DTI no crece con interés creciente"))
+                dti_mono   = dti(cuota_mono, 200, 2800)
+                st.caption(f"Interés {pct(i)} → DTI {pct(dti_mono)}")
+                if prev_dti is not None and dti_mono < prev_dti - 1e-9:
+                    fallos.append((escenario_id, "DTI no crece con interés creciente"))
                 prev_dti = dti_mono
-                dti_vals.append(dti_mono)
-                ltv_vals.append(ltv_val)
+                dti_hist.append(dti_mono); ltv_hist.append(ltv_val_base)
 
-            # --- Monotonicidad de plazo ---
+            # === Monotonicidad de plazo: DTI debe bajar al aumentar plazo ===
+            st.markdown("### ⏳ Monotonicidad: plazo ↑ ⇒ DTI ↓")
             prev_dti = None
             for p in MONO_PLAZOS:
                 cuota_mono = cuota_para(capital_final, 0.03, p)
-                dti_mono = dti(cuota_mono, 200, 2800)
-                st.caption(f"Monotonicidad plazo {p}a → DTI {pct(dti_mono)}")
-                if prev_dti is not None and dti_mono > prev_dti:
-                    fallos_codigo.append((escenario_id, "DTI no baja al aumentar plazo"))
+                dti_mono   = dti(cuota_mono, 200, 2800)
+                st.caption(f"Plazo {p} años → DTI {pct(dti_mono)}")
+                if prev_dti is not None and dti_mono > prev_dti + 1e-9:
+                    fallos.append((escenario_id, "DTI no baja al aumentar plazo"))
                 prev_dti = dti_mono
-                dti_vals.append(dti_mono)
-                ltv_vals.append(ltv_val)
+                dti_hist.append(dti_mono); ltv_hist.append(ltv_val_base)
 
-            # --- Precio máximo ---
-            mejor_precio = validar_precio_maximo(
-                pipe_base={"entrada": op["entrada"]},
-                sueldo=2800, deudas=200, interes=0.03, plazo=25
+            # === Precio máximo coherente (verificación) ===
+            pm = precio_maximo_coherente(
+                entrada=op["entrada"], sueldo=2800, deudas=200,
+                interes=0.03, plazo=25, ltv_lim=ltv_max, financiar=op["financiar"]
             )
-            if mejor_precio:
-                st.caption(f"Precio máximo estimado coherente: {eur(mejor_precio)} (cumple Entrada/LTV/DTI)")
+            if pm and pm > 0:
+                st.caption(f"Precio máximo estimado coherente: {eur(pm)} (cumple Entrada/LTV/DTI con lógica app)")
             else:
                 st.caption("Precio máximo estimado: no encontrado dentro del rango configurado")
-        # --- Escenarios aleatorios (stress test adicional) ---
-        st.subheader("🎲 Stress test aleatorio")
-        for rnd_idx, rnd in enumerate(ESCENARIOS_ALEATORIOS, start=1):
-            st.markdown(f"**Aleatorio {rnd_idx}: {rnd['ccaa']} — {rnd['estado']} — precio {eur(rnd['precio'])}**")
-            pipe = calcular_capital_y_gastos(
-                precio=rnd["precio"], entrada=rnd["entrada"], params=params,
-                ltv_max=THRESHOLDS["LTV_warn"], financiar_comision=rnd["financiar"]
-            )
+
+        # === Escenarios aleatorios (stress test adicional) ===
+        st.subheader("🎲 Stress test aleatorio (6 escenarios)")
+        def rnd_ccaa():
+            return random.choice(["Madrid", "Cataluña", "Andalucía", "Comunidad Valenciana", "Galicia"])
+        def rnd_estado():
+            return random.choice(["Nuevo", "Segunda mano"])
+
+        for rnd_idx in range(1, 7):
+            precio   = random.choice([130000, 180000, 220000, 300000, 380000])
+            entrada  = random.choice([15000, 30000, 50000, 70000])
+            ccaa     = rnd_ccaa()
+            estado   = rnd_estado()
+            financiar = random.choice([True, False])
+
+            st.markdown(f"**Aleatorio {rnd_idx}: {ccaa} — {estado} — precio {eur(precio)} — entrada {eur(entrada)} — financiar comisión {financiar}**")
+
+            # Fiscalidad dinámica para el aleatorio (reutiliza presets actuales)
+            tmp_params = dict(params)  # copia superficial de params actuales
+
+            pipe = calcular_capital_y_gastos(precio, entrada, tmp_params, ltv_max=ltv_max, financiar_comision=financiar)
             capital = pipe["capital_final"]
             ltv_rnd = pipe["ltv"]
-            entrada_ok_rnd = rnd["entrada"] >= pipe["gastos_puros"]
+            entrada_ok_rnd = entrada >= pipe["gastos_puros"]
 
-            # probamos una combinación rápida fija/variable/mixta
-            cuota_f = cuota_para(capital, 0.03, 25); dti_f = dti(cuota_f, 200, 2800)
-            cuota_v = cuota_para(capital, 0.04, 25); dti_v = dti(cuota_v, 150, 2800)
-            cuota_mf = cuota_para(capital, 0.02, 10); cuota_mv = cuota_para(capital, 0.04, 20)
-            dti_m = max(dti(cuota_mf, 250, 3200), dti(cuota_mv, 250, 3200))
+            # Probamos combinaciones rápida fija/variable/mixta
+            cuota_f = cuota_para(capital, 0.03, 25); dti_f = dti(cuota_f, 200, 2800); viable_f = is_viable_joint(cuota_f, cuota_maxima(2800, 200), ltv_rnd, ltv_max, dti_f, entrada_ok_rnd)
+            cuota_v = cuota_para(capital, 0.04, 25); dti_v = dti(cuota_v, 150, 2800); viable_v = is_viable_joint(cuota_v, cuota_maxima(2800, 150), ltv_rnd, ltv_max, dti_v, entrada_ok_rnd)
 
-            st.write(f"Fija → DTI {pct(dti_f)} {flag_dti(dti_f)} | LTV {pct(ltv_rnd)} {flag_ltv(ltv_rnd)}")
-            st.write(f"Variable → DTI {pct(dti_v)} {flag_dti(dti_v)} | LTV {pct(ltv_rnd)} {flag_ltv(ltv_rnd)}")
-            st.write(f"Mixta (peor) → DTI {pct(dti_m)} {flag_dti(dti_m)} | LTV {pct(ltv_rnd)} {flag_ltv(ltv_rnd)}")
+            # Mixta peor tramo
+            cuota_mf = cuota_para(capital, 0.02, 10)
+            cuota_mv = cuota_para(capital, 0.04, 20)
+            dti_mf = dti(cuota_mf, 250, 3200); dti_mv = dti(cuota_mv, 250, 3200)
+            dti_m  = max(dti_mf, dti_mv); cuota_m_peor = max(cuota_mf, cuota_mv)
+            viable_m = is_viable_joint(cuota_m_peor, cuota_maxima(3200, 250), ltv_rnd, ltv_max, dti_m, entrada_ok_rnd)
 
-            for dti_val in (dti_f, dti_v, dti_m):
-                if not is_viable_joint(dti_val, ltv_rnd, entrada_ok_rnd):
-                    st.error("❌ Viabilidad conjunta")
-                else:
-                    st.success("✅ Viabilidad conjunta")
+            dti_hist.extend([dti_f, dti_v, dti_m]); ltv_hist.extend([ltv_rnd, ltv_rnd, ltv_rnd])
 
-                dti_vals.append(dti_val)
-                ltv_vals.append(ltv_rnd)
+            st.write(f"Fija → DTI {flag_dti(dti_f)} {pct_dti(dti_f)} | LTV {flag_ltv(ltv_rnd)} {pct(ltv_rnd)} → {'✅ Viable' if viable_f else '❌ No viable'}")
+            st.write(f"Variable → DTI {flag_dti(dti_v)} {pct_dti(dti_v)} | LTV {flag_ltv(ltv_rnd)} {pct(ltv_rnd)} → {'✅ Viable' if viable_v else '❌ No viable'}")
+            st.write(f"Mixta (peor) → DTI {flag_dti(dti_m)} {pct_dti(dti_m)} | LTV {flag_ltv(ltv_rnd)} {pct(ltv_rnd)} → {'✅ Viable' if viable_m else '❌ No viable'}")
+
+            # Señalización de incoherencias evidentes
+            assert_coherencia(fallos, rnd_idx, "Entrada insuficiente aceptada (Aleatorio)", not (not entrada_ok_rnd and (viable_f or viable_v or viable_m)))
+            assert_coherencia(fallos, rnd_idx, "DTI > 35% aceptado (Aleatorio)", not ((dti_visible(dti_f) > THRESHOLDS["DTI_fail"] and viable_f) or
+                                                                                       (dti_visible(dti_v) > THRESHOLDS["DTI_fail"] and viable_v) or
+                                                                                       (dti_visible(dti_m) > THRESHOLDS["DTI_fail"] and viable_m)))
+            assert_coherencia(fallos, rnd_idx, "LTV > Límite aceptado (Aleatorio)", not (ltv_rnd > ltv_max and (viable_f or viable_v or viable_m)))
 
         # --- Resumen ejecutivo único ---
         st.subheader("📈 Resumen validación intensa")
-        if dti_vals:
-            st.write(f"DTI medio: {pct(stats.mean(dti_vals))}")
-            st.write(f"DTI máximo: {pct(max(dti_vals))}")
-            st.write(f"DTI mínimo: {pct(min(dti_vals))}")
-        if ltv_vals:
-            st.write(f"LTV medio: {pct(stats.mean(ltv_vals))}")
-            st.write(f"LTV máximo: {pct(max(ltv_vals))}")
-            st.write(f"LTV mínimo: {pct(min(ltv_vals))}")
+        if dti_hist:
+            st.write(f"DTI medio: {pct(sum(dti_hist)/len(dti_hist))}")
+            st.write(f"DTI máximo: {pct(max(dti_hist))}")
+            st.write(f"DTI mínimo: {pct(min(dti_hist))}")
+        if ltv_hist:
+            st.write(f"LTV medio: {pct(sum(ltv_hist)/len(ltv_hist))}")
+            st.write(f"LTV máximo: {pct(max(ltv_hist))}")
+            st.write(f"LTV mínimo: {pct(min(ltv_hist))}")
 
-        if fallos_codigo:
-            st.error(f"❌ Se han detectado incoherencias de código en {len(fallos_codigo)} escenarios. Revisa app.py.")
-            for esc_id, label in fallos_codigo:
+        if fallos:
+            st.error(f"❌ Se han detectado {len(fallos)} incoherencias de lógica. Revisa las condiciones indicadas.")
+            for esc_id, label in fallos:
                 st.error(f"   → Escenario {esc_id}: {label}")
         else:
-            st.success("✅ Todo correcto: la calculadora cumple en todos los escenarios. "
-                       "No se han detectado incoherencias de código.")
+            st.success("✅ Todo correcto: la calculadora cumple en todos los escenarios. No se han detectado incoherencias.")
+
 
 
 
