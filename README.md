@@ -47,8 +47,21 @@ Solo necesitas tener una cuenta gratuita en 👉 [https://streamlit.io/cloud](ht
 
 ---
 
-📌 Versión
-v1.0.0 — Publicación inicial en repositorio limpio (fase privada) Este repositorio comienza en la versión 1.0.0 como baseline. Actualmente el proyecto se mantiene en modo privado. Más adelante, cuando esté maduro y estable, se publicará de forma abierta.
+📌 Versión actual: v1.1.0 — Validación unificada y mejoras pedagógicas
+Validación centralizada con es_viable() en todos los modos y escenarios.
+
+🧮 Resumen compacto con veredicto claro (✅/❌) y aviso pedagógico en el límite del 35,00 %.
+
+💡 Consejos coherentes con es_viable() y aviso específico en el 35,00 %.
+
+Guías actualizadas en 🔎 Descubrir mi precio máximo y 🏠 Comprobar una vivienda concreta para explicar el límite y recomendar margen de seguridad.
+
+Coherencia visual del DTI garantizada (pct_dti y dti_visible sincronizados).
+
+📌 Versión anterior: v1.0.0 — Publicación inicial en repositorio limpio (fase privada)
+Baseline inicial con todas las funcionalidades principales.
+
+Repositorio privado hasta futura publicación pública.
 
 ---
 
