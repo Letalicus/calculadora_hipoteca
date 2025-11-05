@@ -1,5 +1,12 @@
 # 📑 CHANGELOG — Calculadora Hipotecaria Profesional
 
+## [Unreleased]
+### Changed
+- Mejorado el contraste de colores en las tablas de coste total, compra y pagos al banco.
+- Los resaltados ahora se ven correctamente tanto en tema claro como en tema oscuro.
+
+---
+
 ## [1.1.3] - 2025-11-05
 ### Fixed
 - Corregida la **tabla de amortización simplificada en hipotecas mixtas**, que antes mostraba todo el tramo variable con valores a 0 €.

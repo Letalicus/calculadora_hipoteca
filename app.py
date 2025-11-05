@@ -19,6 +19,8 @@
 import streamlit as st
 from math import isclose
 
+
+
 # =========================
 # Umbrales globales de DTI
 # =========================
@@ -999,7 +1001,6 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         intereses_totales = pagos_totales - capital_hipoteca
         capital_amortizado = capital_hipoteca
     elif tipo_hipoteca == "Mixta":
-        # Desglose pedagógico por tramos (aproximación)
         cuota_fijo = cuota_prestamo(capital_hipoteca, interes_fijo, anios_fijo) or 0.0
         pagos_fijo = cuota_fijo * anios_fijo * 12
         plazo_var = max(0, anos_plazo - anios_fijo)
@@ -1020,7 +1021,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
     def resaltar_resumen(row):
         if "Coste total" in row["Concepto"]:
-            return ["background-color: #b3ffb3; font-weight: bold"] * len(row)
+            return ["background-color: #14532d; color: white; font-weight: bold"] * len(row)
         return [""] * len(row)
 
     st.dataframe(
@@ -1031,8 +1032,8 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         hide_index=True
     )
     st.caption("El coste inicial incluye precio, impuestos y gastos de compra. "
-               "Los pagos al banco incluyen solo capital e intereses. "
-               "El coste total con hipoteca es la suma de ambos mundos.")
+            "Los pagos al banco incluyen solo capital e intereses. "
+            "El coste total con hipoteca es la suma de ambos mundos.")
 
     # --- Expander con el desglose completo ---
     with st.expander("📊 Ver desglose completo"):
@@ -1051,7 +1052,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
         def resaltar_totales(row):
             if "Coste inicial" in row["Concepto"]:
-                return ["background-color: #d1ffd1; font-weight: bold"] * len(row)
+                return ["background-color: #1e3a8a; color: white; font-weight: bold"] * len(row)
             return [""] * len(row)
 
         st.dataframe(
@@ -1062,7 +1063,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             hide_index=True
         )
         st.caption("Este bloque refleja lo que cuesta formalizar la compra: precio, impuestos y gastos iniciales. "
-                   "No incluye las cuotas al banco.")
+                "No incluye las cuotas al banco.")
 
         # Tabla 2: Pagos al banco
         tabla_banco = pd.DataFrame([
@@ -1073,7 +1074,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
         def resaltar_banco(row):
             if "Pagos totales" in row["Concepto"]:
-                return ["background-color: #d1ffd1; font-weight: bold"] * len(row)
+                return ["background-color: #7c2d12; color: white; font-weight: bold"] * len(row)
             return [""] * len(row)
 
         st.dataframe(
@@ -1084,7 +1085,8 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             hide_index=True
         )
         st.caption("Este bloque refleja lo que pagarás en cuotas al banco: capital + intereses. "
-                   "No incluye impuestos ni gastos iniciales.")
+                "No incluye impuestos ni gastos iniciales.")
+
 
     # =========================
     # 📊 Escenarios de interés (2%–5%)
