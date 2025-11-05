@@ -1,16 +1,29 @@
-# Entorno virtual y caché de Python
-.venv/
+# --- Python básico ---
 __pycache__/
 *.pyc
-
-# Copias locales y archivos que no deben publicarse
-Backup/
-
-
-
-# Archivos temporales de editores (opcional, pero útil)
-.vscode/
+*.pyo
+*.pyd
+*.tmp
 *.log
 
-# Archivos no utilizados actualmente
+# --- Entorno virtual ---
+.venv/
+
+# --- Configuración de editores ---
+.vscode/
+.idea/
+
+# --- Copias locales ---
+Backup/
+
+# --- PyInstaller y artefactos de build ---
+build/
+dist/
+*.spec
+
+# --- Archivos de sistema ---
+.DS_Store
+Thumbs.db
+
+# --- Archivos no utilizados actualmente ---
 DejaVuSans.ttf
