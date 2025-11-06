@@ -1,6 +1,11 @@
 # 📑 CHANGELOG — Calculadora Hipotecaria Profesional
 
 ## [Unreleased]
+- (sin cambios por ahora)
+
+---
+
+## [1.1.4] - 2025-11-06
 ### Changed
 - Mejorado el contraste de colores en las tablas de coste total, compra y pagos al banco.
 - Los resaltados ahora se ven correctamente tanto en tema claro como en tema oscuro.
@@ -13,6 +18,7 @@
 - Ajustado el **cálculo de hipoteca mixta**:
   - El tramo fijo ahora se calcula con el plazo total, evitando amortizar todo el capital en los primeros años.
   - El tramo variable se recalcula correctamente con el capital pendiente al final del tramo fijo y el plazo restante.
+
 
 ---
 

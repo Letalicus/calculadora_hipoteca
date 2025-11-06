@@ -1,16 +1,16 @@
 # ============================================================
 # 🏠 Calculadora Hipotecaria Profesional
-# Versión: 1.1.3
-# Fecha: 2025-11-05
+# Versión: 1.1.4
+# Fecha: 2025-11-06
 # Autor: Letalicus
 #
 # 📌 Resumen de cambios en esta versión:
-# - Corregida la tabla de amortización simplificada en hipotecas mixtas,
-#   que antes mostraba todo el tramo variable a 0 €.
-# - Ajustado el cálculo de hipoteca mixta: ahora el tramo fijo se calcula
-#   con el plazo total y el tramo variable con el capital pendiente y el
-#   plazo restante, evitando amortizar todo en el tramo fijo.
+# - Mejorado el contraste de colores en las tablas de coste total,
+#   compra y pagos al banco.
+# - Los resaltados ahora se ven correctamente tanto en tema claro
+#   como en tema oscuro.
 # ============================================================
+
 
 
 
@@ -1028,7 +1028,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         tabla_resumen.style
             .apply(resaltar_resumen, axis=1)
             .set_properties(**{"text-align": "left", "white-space": "nowrap"}),
-        use_container_width=True,
+        width="stretch",
         hide_index=True
     )
     st.caption("El coste inicial incluye precio, impuestos y gastos de compra. "
@@ -1059,7 +1059,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             tabla_compra.style
                 .apply(resaltar_totales, axis=1)
                 .set_properties(**{"text-align": "left", "white-space": "nowrap"}),
-            use_container_width=True,
+            width="stretch",
             hide_index=True
         )
         st.caption("Este bloque refleja lo que cuesta formalizar la compra: precio, impuestos y gastos iniciales. "
@@ -1081,7 +1081,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             tabla_banco.style
                 .apply(resaltar_banco, axis=1)
                 .set_properties(**{"text-align": "left", "white-space": "nowrap"}),
-            use_container_width=True,
+            width="stretch",
             hide_index=True
         )
         st.caption("Este bloque refleja lo que pagarás en cuotas al banco: capital + intereses. "
@@ -1311,7 +1311,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     break
 
             df_amort = pd.DataFrame(data)
-            st.dataframe(df_amort, use_container_width=True)
+            st.dataframe(df_amort, width="stretch")
             st.caption("En hipotecas fijas o variables, la cuota se mantiene estable y la tabla muestra cómo cada año disminuye el capital pendiente y los intereses.")
 
         elif tipo_hipoteca == "Mixta":
@@ -1346,7 +1346,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     break
 
             st.markdown("### 🟦 Tramo fijo")
-            st.dataframe(pd.DataFrame(data_fijo), use_container_width=True)
+            st.dataframe(pd.DataFrame(data_fijo), width="stretch")
             st.caption("Durante el tramo fijo, la cuota se calcula con el plazo total pactado. Así, al terminar el tramo fijo queda capital pendiente para el tramo variable.")
 
             # --- Tramo variable (recalcular cuota con capital pendiente y PLAZO RESTANTE) ---
@@ -1381,7 +1381,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                         break
 
                 st.markdown("### 🟩 Tramo variable")
-                st.dataframe(pd.DataFrame(data_var), use_container_width=True)
+                st.dataframe(pd.DataFrame(data_var), width="stretch")
                 st.caption("En el tramo variable, la cuota se recalcula con el nuevo tipo (euríbor + diferencial) y el plazo restante.")
             else:
                 st.markdown("### 🟩 Tramo variable")
