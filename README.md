@@ -55,9 +55,15 @@ Solo necesitas tener una cuenta gratuita en 👉 https://streamlit.io/cloud
 ---
 
 📌 Versión actual  
-v1.1.4 — 2025-11-06  
+v1.1.5 — 2025-11-06  
 
-- Mejorado el contraste de colores en las tablas de coste total, compra y pagos al banco.   
+- Ajustada la lógica de entrada y capital financiado:
+  - Ahora se distingue correctamente entre hipoteca normal, hipoteca reducida y compra al contado.
+  - Evita mostrar "No disponible" cuando la entrada cubre el precio completo de la vivienda (se indica que no se requiere hipoteca).
+- Mensajes más claros y pedagógicos en todos los escenarios de entrada, LTV y DTI.
+- Integración completa en el Modo 2:
+  - Escenarios de interés, consejos de viabilidad, amortización anticipada y resumen compacto coherentes incluso sin hipoteca.
+- Mejorada la consistencia visual y narrativa en los bloques de coste total, tablas de amortización y resúmenes.   
 
 📖 Consulta el historial completo de cambios en el archivo CHANGELOG.md.
 
