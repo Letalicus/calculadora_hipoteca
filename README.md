@@ -47,17 +47,6 @@ Abre en tu navegador la URL que aparece (por defecto):
 
 ---
 
-## 📦 Descarga de la versión compilada
-
-Si prefieres usar la aplicación sin instalar nada, descarga directamente el ejecutable desde la última release:  
-👉 https://github.com/Letalicus/calculadora_hipoteca/releases/tag/v1.1.4
-
-Dentro del archivo ZIP encontrarás:  
-- CalculadoraHipoteca.exe  
-- INSTRUCCIONES.txt con la guía de uso  
-
----
-
 ## 🌐 Versión online
 
 También puedes desplegarla fácilmente en **Streamlit Cloud** y acceder desde cualquier navegador.  
@@ -68,8 +57,7 @@ Solo necesitas tener una cuenta gratuita en 👉 https://streamlit.io/cloud
 📌 Versión actual  
 v1.1.4 — 2025-11-06  
 
-- Mejorado el contraste de colores en las tablas de coste total, compra y pagos al banco.  
-- Añadido archivo INSTRUCCIONES.txt en la distribución ZIP.  
+- Mejorado el contraste de colores en las tablas de coste total, compra y pagos al banco.   
 
 📖 Consulta el historial completo de cambios en el archivo CHANGELOG.md.
 
