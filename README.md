@@ -17,11 +17,11 @@ Aplicación interactiva en **Python + Streamlit** para simular hipotecas en Espa
 ## 🌐 Probar la aplicación online
 
 Puedes probar la calculadora directamente desde tu navegador, sin necesidad de instalar nada:  
-👉 [https://calculadorahipotecapro.streamlit.app/](https://calculadorahipotecapro.streamlit.app/)
+👉 https://calculadorahipotecapro.streamlit.app/
 
 ---
 
-## 🚀 Cómo usarla
+## 🚀 Cómo usarla en local
 
 ### 1️⃣ Clona el repositorio y entra en la carpeta
 
@@ -43,23 +43,33 @@ streamlit run app.py
 ```
 
 Abre en tu navegador la URL que aparece (por defecto):  
-👉 [http://localhost:8501](http://localhost:8501)
+👉 http://localhost:8501
+
+---
+
+## 📦 Descarga de la versión compilada
+
+Si prefieres usar la aplicación sin instalar nada, descarga directamente el ejecutable desde la última release:  
+👉 https://github.com/Letalicus/calculadora_hipoteca/releases/tag/v1.1.4
+
+Dentro del archivo ZIP encontrarás:  
+- CalculadoraHipoteca.exe  
+- INSTRUCCIONES.txt con la guía de uso  
 
 ---
 
 ## 🌐 Versión online
 
 También puedes desplegarla fácilmente en **Streamlit Cloud** y acceder desde cualquier navegador.  
-Solo necesitas tener una cuenta gratuita en 👉 [https://streamlit.io/cloud](https://streamlit.io/cloud)
+Solo necesitas tener una cuenta gratuita en 👉 https://streamlit.io/cloud
 
 ---
 
-📌 Versión actual
-v1.1.3 — 2025-11-05
+📌 Versión actual  
+v1.1.4 — 2025-11-06  
 
-- Corregida la tabla de amortización simplificada en hipotecas mixtas.
-
-- Ajustado el cálculo de hipoteca mixta: tramo fijo con plazo total y tramo variable con capital pendiente + plazo restante.
+- Mejorado el contraste de colores en las tablas de coste total, compra y pagos al banco.  
+- Añadido archivo INSTRUCCIONES.txt en la distribución ZIP.  
 
 📖 Consulta el historial completo de cambios en el archivo CHANGELOG.md.
 
@@ -68,4 +78,13 @@ v1.1.3 — 2025-11-05
 ## 👤 Autor
 
 **Letalicus**  
-📍 *España*
+📍 España
+
+---
+
+## 📜 Licencia
+
+Este proyecto se distribuye bajo la licencia **MIT**.  
+Consulta el archivo LICENSE para más detalles.
+
+---
