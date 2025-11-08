@@ -893,7 +893,9 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         elif sin_hipoteca:
             st.success("✅ Entrada suficiente. No se requiere hipoteca: la entrada cubre el precio completo de la vivienda.")
         elif diferencia_entrada >= 0:
-            st.success(f"✅ Entrada suficiente. Excedente aplicado al préstamo/precio: {eur(excedente)}")
+            st.success(f"✅ Entrada suficiente. El excedente se aplica al precio de la vivienda, reduciendo el préstamo necesario: {eur(excedente)}")
+
+
 
         # --- Texto aclaratorio ratios (solo aplica si hay hipoteca) ---
         st.info(

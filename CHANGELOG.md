@@ -1,7 +1,7 @@
 # 📑 CHANGELOG — Calculadora Hipotecaria Profesional
 
 ## [Unreleased]
-- (sin cambios por ahora)
+- Reformulado el mensaje de entrada para mayor claridad visual: ahora el excedente se muestra al final del texto.
 
 ---
 
