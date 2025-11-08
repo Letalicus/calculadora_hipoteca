@@ -55,15 +55,18 @@ Solo necesitas tener una cuenta gratuita en 👉 https://streamlit.io/cloud
 ---
 
 📌 Versión actual  
-v1.1.5 — 2025-11-06  
+v1.2.0 — 2025-11-08  
 
-- Ajustada la lógica de entrada y capital financiado:
-  - Ahora se distingue correctamente entre hipoteca normal, hipoteca reducida y compra al contado.
-  - Evita mostrar "No disponible" cuando la entrada cubre el precio completo de la vivienda (se indica que no se requiere hipoteca).
-- Mensajes más claros y pedagógicos en todos los escenarios de entrada, LTV y DTI.
-- Integración completa en el Modo 2:
-  - Escenarios de interés, consejos de viabilidad, amortización anticipada y resumen compacto coherentes incluso sin hipoteca.
-- Mejorada la consistencia visual y narrativa en los bloques de coste total, tablas de amortización y resúmenes.   
+### ✨ **Novedades principales**
+- 🔧 **Corregido cálculo de hipotecas mixtas**: ahora calcula las cuotas con el plazo completo para ambos tramos, eliminando DTI >100% y haciendo los cálculos matemáticamente coherentes.
+- 🧪 **Implementado validador profesional completo**: nueva herramienta de testing automático que valida 12 escenarios hipotecarios (fijos, variables y mixtos) con reporte detallado de errores y advertencias.
+- 🧹 **Código limpio y optimizado**: eliminado código obsoleto, depurados errores y optimizado para producción.
+- ✅ **Mejoras en coherencia matemática**: DTI y LTV perfectamente alineados en todos los escenarios de uso y tipos de hipoteca.
+
+### 🛠️ **Mejoras técnicas**
+- Validación robusta de escenarios hipotecarios
+- Precisión mejorada en fórmulas matemáticas
+- Código estable y listo para producción   
 
 📖 Consulta el historial completo de cambios en el archivo CHANGELOG.md.
 
