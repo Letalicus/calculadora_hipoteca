@@ -1,6 +1,8 @@
 # 📑 CHANGELOG — Calculadora Hipotecaria Profesional
 
 ## [Unreleased]
+### Fixed
+- ✏️ **Corregida errata en texto de advertencia de app.py**: sustituido “Modo 1” por el título correcto **🔎 Descubrir mi precio máximo**, manteniendo la explicación sobre redondeos y DTI >35 %.
 
 ---
 

@@ -844,8 +844,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         "- Tipo de hipoteca e interés correspondiente.\n\n"
         "ℹ️ Con estos datos, la calculadora mostrará: LTV, DTI, coste total de la operación, "
         "escenarios de interés, consejos de viabilidad y tablas de amortización.\n\n"
-        "⚠️ Nota importante: si introduces aquí exactamente el precio máximo del Modo 1, "
-        "puede aparecer como **no viable** por redondeos o porque el DTI real supere mínimamente el 35 %."
+        "⚠️ Nota importante: si introduces el precio exacto calculado en **🔎 Descubrir mi precio máximo**, puede aparecer como no viable por pequeños redondeos o porque el DTI supere mínimamente el 35 %."
     )
 
     # ✅ Validación de parámetros mínimos
