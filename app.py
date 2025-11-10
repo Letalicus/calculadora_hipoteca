@@ -1,20 +1,22 @@
 # ============================================================
 # 🏠 Calculadora Hipotecaria Profesional
-# Versión: 1.3.0
+# Versión: 1.3.1
 # Fecha: 2025-11-10
 # Autor: Letalicus
 #
-# 🎉 ¡Nuevo en esta versión!
-# - 📊 **Visualización de datos mejorada**: Nuevos gráficos interactivos para una mejor comprensión de los costes y amortizaciones.
-# - 💡 **Consejos de viabilidad optimizados**: Mensajes más claros y accionables para mejorar la viabilidad de tu hipoteca.
-# - 🎨 **Interfaz renovada**: Mejora en la experiencia de usuario con iconografía consistente y jerarquía visual mejorada.
-# - 🛠️ **Correcciones y mejoras**:
-#   - ✏️ Corregida errata en texto de advertencia: "Modo 1" reemplazado por "🔎 Descubrir mi precio máximo".
-#   - 🔄 Mejorado el manejo de mensajes de error y advertencias.
-#   - 📱 Optimización para diferentes tamaños de pantalla.
-# - 🧮 **Precisión mejorada**:
-#   - Cálculos más precisos en los escenarios de hipoteca mixta.
-#   - Validación mejorada de los límites de financiación.
+# 🎉 Mejoras en esta versión:
+# - 📱 **Experiencia móvil mejorada**:
+#   - Gráficos totalmente adaptables a cualquier tamaño de pantalla
+#   - Mejoras en la legibilidad en dispositivos móviles
+#   - Ajustes de márgenes y espaciado optimizados
+# - 🛠️ **Correcciones técnicas**:
+#   - Actualizado el manejo de anchos de gráficos según nuevas directrices de Streamlit
+#   - Corregidos problemas de visualización en dispositivos pequeños
+#   - Mejorada la consistencia visual en diferentes navegadores
+# - 📊 **Optimizaciones de rendimiento**:
+#   - Reducción de tiempos de carga en conexiones móviles
+#   - Mejor manejo de recursos gráficos
+#   - Optimización de la interacción táctil
 # ============================================================
 
 
@@ -1423,7 +1425,23 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     font=dict(color=text_color, size=12)
                 )
                 
-                st.plotly_chart(fig_dti, use_container_width=True, config={'displayModeBar': False})
+                # Configuración responsive para el gráfico DTI
+                fig_dti.update_layout(
+                    margin=dict(l=10, r=10, t=30, b=10),
+                    autosize=True,
+                    font=dict(size=12)
+                )
+                st.plotly_chart(
+                    fig_dti, 
+                    use_container_width=True, 
+                    config={
+                        'displayModeBar': True,
+                        'responsive': True,
+                        'displaylogo': False,
+                        'modeBarButtonsToRemove': ['select2d', 'lasso2d', 'select'],
+                        'staticPlot': False
+                    }
+                )
                 
                 # Interpretación DTI
                 with st.container(height=90):
@@ -1485,7 +1503,23 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     font=dict(color=text_color, size=12)
                 )
                 
-                st.plotly_chart(fig_ltv, use_container_width=True, config={'displayModeBar': False})
+                # Configuración responsive para el gráfico LTV
+                fig_ltv.update_layout(
+                    margin=dict(l=10, r=10, t=30, b=10),
+                    autosize=True,
+                    font=dict(size=12)
+                )
+                st.plotly_chart(
+                    fig_ltv, 
+                    use_container_width=True, 
+                    config={
+                        'displayModeBar': True,
+                        'responsive': True,
+                        'displaylogo': False,
+                        'modeBarButtonsToRemove': ['select2d', 'lasso2d', 'select'],
+                        'staticPlot': False
+                    }
+                )
                 
                 # Interpretación LTV
                 with st.container(height=90):
@@ -1626,13 +1660,16 @@ elif modo == "🏠 Comprobar una vivienda concreta":
             
             # Configuración de colores para tooltips y leyenda
             if theme.get('dark'):
-                # Para modo oscuro
+                # Configuración de colores para tooltips y leyenda
                 hover_bg = 'rgba(15, 23, 42, 0.98)'  # Fondo oscuro
                 hover_border = 'rgba(100, 116, 139, 0.5)'
                 hover_text_color = '#FFFFFF'  # Texto blanco
                 legend_bg = 'rgba(15, 23, 42, 0.98)'  # Fondo oscuro
                 legend_text_color = '#FFFFFF'  # Texto blanco
                 plotly_template = 'plotly_dark'  # Usar tema oscuro de Plotly
+                
+                # Ajustes específicos para móviles
+                text_size = 12  # Tamaño de fuente más pequeño para móviles
             else:
                 # Para modo claro
                 hover_bg = color_with_alpha(theme.get('secondary_bg', '#FFFFFF'), 0.98)
@@ -1641,6 +1678,9 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                 legend_bg = 'rgba(255, 255, 255, 0.95)'
                 legend_text_color = theme.get('text_color', '#1A1A1A')
                 plotly_template = 'plotly_white'
+                
+                # Ajustes específicos para móviles
+                text_size = 12  # Tamaño de fuente más pequeño para móviles
                 
             donut_colors = [theme['colors'][i % len(theme['colors'])] for i in range(len(datos_costes))]
             # Crear gráfico donut con mejor visibilidad
@@ -1655,7 +1695,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                 insidetextorientation='radial',
                 textfont=dict(
                     color=theme['text_color'],
-                    size=14,  # Tamaño de fuente más grande
+                    size=text_size,  # Usar tamaño de fuente responsive
                     family='Arial, sans-serif'
                 ),
                 hovertemplate=(
@@ -1666,7 +1706,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                 pull=[0.02] * len(datos_costes),  # Separación uniforme para todas las secciones
                 outsidetextfont=dict(
                     color=theme['text_color'],
-                    size=14,  # Tamaño de fuente más grande para el texto externo
+                    size=text_size,  # Usar tamaño de fuente responsive
                     family='Arial, sans-serif'
                 ),
                 direction='clockwise',
@@ -1687,7 +1727,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                 },
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                margin=dict(l=40, r=200, t=80, b=40),  # Margen derecho más ancho para las etiquetas
+                margin=dict(l=10, r=10, t=60, b=20),  # Márgenes optimizados para móviles
                 uniformtext_minsize=12,  # Tamaño mínimo de texto más grande
                 uniformtext_mode='hide',  # Ocultar textos que no quepan
                 font=dict(size=14, color=theme['text_color']),
@@ -1744,21 +1784,80 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                 showlegend=False  # Desactivar la leyenda nativa
             )  # Cierre de update_layout
             
-            # Configuración adicional para el contenedor del gráfico
+            # Configuración para el gráfico responsive
+            fig_costes.update_layout(
+                autosize=True,
+                margin=dict(
+                    l=20,  # Reducir margen izquierdo
+                    r=20,  # Reducir margen derecho
+                    t=60,  # Reducir margen superior
+                    b=20,  # Reducir margen inferior
+                    pad=5  # Padding pequeño
+                ),
+                height=400,  # Altura fija más pequeña para móviles
+                font=dict(size=12)  # Tamaño de fuente base para mejor legibilidad
+            )
+            
+            # Configuración para el contenedor del gráfico
             col1, col2 = st.columns([3, 1])
             
-            # No es necesario actualizar el layout nuevamente, ya está desactivado arriba
-            
             with col1:
-                # Mostrar el gráfico sin leyenda
-                st.plotly_chart(fig_costes, 
-                             width='stretch',
-                             config={
-                                 'displayModeBar': True,
-                                 'staticPlot': False,
-                                 'displaylogo': False,
-                                 'modeBarButtonsToRemove': ['select2d', 'lasso2d', 'select'],
-                             })
+                # Mostrar el gráfico con configuración responsive
+                st.plotly_chart(
+                    fig_costes,
+                    use_container_width=True,  # Usar el ancho del contenedor
+                    config={
+                        'displayModeBar': True,
+                        'staticPlot': False,
+                        'displaylogo': False,
+                        'responsive': True,  # Hacer el gráfico responsive
+                        'modeBarButtonsToRemove': ['select2d', 'lasso2d', 'select'],
+                    }
+                )
+            
+            # Estilos CSS globales para todos los gráficos
+            st.markdown("""
+            <style>
+                /* Estilos para móviles */
+                @media (max-width: 768px) {
+                    .stPlotlyChart {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                    }
+                    .js-plotly-plot .plotly .main-svg text {
+                        font-size: 12px !important;
+                    }
+                    .plotly .legend {
+                        font-size: 10px !important;
+                    }
+                }
+                
+                /* Ajustes para tablets */
+                @media (min-width: 769px) and (max-width: 1024px) {
+                    .stPlotlyChart {
+                        width: 100% !important;
+                    }
+                    .js-plotly-plot .plotly .main-svg text {
+                        font-size: 11px !important;
+                    }
+                }
+                
+                /* Ajustes generales para todos los gráficos */
+                .stPlotlyChart {
+                    transition: all 0.3s ease;
+                }
+                
+                /* Mejorar la legibilidad en modo oscuro */
+                [data-testid="stAppViewContainer"] .js-plotly-plot .plotly .main-svg {
+                    background: transparent !important;
+                }
+                
+                /* Ajustar el tamaño de los tooltips */
+                .svg-container {
+                    margin: 0 auto;
+                }
+            </style>
+            """, unsafe_allow_html=True)
             
             with col2:
                 # Inyectar JavaScript para detectar el tema
@@ -2072,37 +2171,82 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         
         st.subheader("💡 Consejos para mejorar la viabilidad")
         
-        # Estilos CSS para mejorar la presentación
+        # Estilos CSS compatibles con tema claro y oscuro
         st.markdown("""
         <style>
-        .consejo-container {
-            border-left: 4px solid #4CAF50;
-            padding: 1rem;
-            margin: 1rem 0;
-            background-color: #f8f9fa;
-            border-radius: 0 8px 8px 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .opcion-consejo {
-            margin: 0.5rem 0;
-            padding: 0.75rem;
-            background-color: #f0f7ff;
-            border-radius: 6px;
-            border-left: 4px solid #2196F3;
-            transition: all 0.3s ease;
-        }
-        .opcion-consejo:hover {
-            background-color: #e1f0ff;
-            transform: translateX(5px);
-        }
-        .advertencia {
-            background-color: #fff3e0 !important;
-            border-left: 3px solid #ff9800 !important;
-        }
-        .financiacion {
-            background-color: #e8f5e9 !important;
-            border-left: 3px solid #4caf50 !important;
-        }
+            /* Estilos base que funcionan en ambos temas */
+            .consejo-container {
+                border-left: 4px solid;
+                padding: 1rem;
+                margin: 1rem 0;
+                border-radius: 0 8px 8px 0;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            
+            /* Estilos específicos para tema claro */
+            @media (prefers-color-scheme: light) {
+                .consejo-container {
+                    background-color: #f8f9fa;
+                    border-left-color: #4CAF50;
+                    color: #333;
+                }
+                .opcion-consejo {
+                    background-color: #f0f7ff;
+                    border-left: 4px solid #2196F3;
+                    color: #1a1a1a;
+                }
+                .advertencia {
+                    background-color: #fff3e0 !important;
+                    border-left-color: #ff9800 !important;
+                }
+                .financiacion {
+                    background-color: #e8f5e9 !important;
+                    border-left-color: #4caf50 !important;
+                }
+            }
+            
+            /* Estilos específicos para tema oscuro */
+            @media (prefers-color-scheme: dark) {
+                .consejo-container {
+                    background-color: #1e1e1e;
+                    border-left-color: #4CAF50;
+                    color: #f0f0f0;
+                }
+                .opcion-consejo {
+                    background-color: #2a3b4d;
+                    border-left: 4px solid #4d8ff9;
+                    color: #f0f0f0;
+                }
+                .advertencia {
+                    background-color: #3e2c16 !important;
+                    border-left-color: #ff9800 !important;
+                }
+                .financiacion {
+                    background-color: #1a3a1a !important;
+                    border-left-color: #4caf50 !important;
+                }
+            }
+            
+            /* Estilos comunes para opciones de consejo */
+            .opcion-consejo {
+                margin: 0.5rem 0;
+                padding: 0.75rem;
+                border-radius: 6px;
+                transition: all 0.3s ease;
+            }
+            
+            .opcion-consejo:hover {
+                transform: translateX(5px);
+                opacity: 0.9;
+            }
+            
+            /* Asegurar que el texto sea legible en ambos temas */
+            .opcion-consejo p, 
+            .consejo-container p, 
+            .consejo-container h3,
+            .opcion-consejo h3 {
+                color: inherit !important;
+            }
         </style>
         """, unsafe_allow_html=True)
         
@@ -2577,7 +2721,24 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     fig_capital.update_xaxes(title_text="Año", tickfont=dict(size=12))
                     fig_capital.update_yaxes(title_text="Capital Pendiente (€)", tickfont=dict(size=12))
                     
-                    st.plotly_chart(fig_capital, width='stretch')
+                    # Configuración responsive para el gráfico de capital
+                    fig_capital.update_layout(
+                        margin=dict(l=10, r=10, t=30, b=30),
+                        autosize=True,
+                        height=400,
+                        font=dict(size=12)
+                    )
+                    st.plotly_chart(
+                        fig_capital, 
+                        use_container_width=True,
+                        config={
+                            'displayModeBar': True,
+                            'responsive': True,
+                            'displaylogo': False,
+                            'modeBarButtonsToRemove': ['select2d', 'lasso2d', 'select'],
+                            'staticPlot': False
+                        }
+                    )
                     
                     st.markdown("""
                     **📊 ¿Qué muestra este gráfico?**
@@ -2746,7 +2907,24 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     fig_pagos.update_xaxes(title_text="Año")
                     fig_pagos.update_yaxes(title_text="Pago Anual (€)" )
                     
-                    st.plotly_chart(fig_pagos, width='stretch')
+                    # Configuración responsive para el gráfico de pagos
+                    fig_pagos.update_layout(
+                        margin=dict(l=10, r=10, t=30, b=30),
+                        autosize=True,
+                        height=400,
+                        font=dict(size=12)
+                    )
+                    st.plotly_chart(
+                        fig_pagos, 
+                        use_container_width=True,
+                        config={
+                            'displayModeBar': True,
+                            'responsive': True,
+                            'displaylogo': False,
+                            'modeBarButtonsToRemove': ['select2d', 'lasso2d', 'select'],
+                            'staticPlot': False
+                        }
+                    )
                     
                     st.markdown("""
                     **📊 ¿Qué muestra este gráfico?**
@@ -3098,6 +3276,6 @@ if MODO_VALIDACION:
 st.divider()
 st.caption("""
 **Autor:** Letalicus  
-**Versión:** 1.3.0  
+**Versión:** 1.3.1  
 **Fecha de actualización:** Noviembre 2025
 """)

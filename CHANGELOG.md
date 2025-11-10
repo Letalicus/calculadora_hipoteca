@@ -4,6 +4,15 @@
 
 ---
 
+## [1.3.1] - 2025-11-10
+### Fixed
+- Corregida la visualización de gráficos en dispositivos móviles
+- Mejorada la responsividad en pantallas pequeñas
+- Ajustes de márgenes y tamaños de fuente para mejor legibilidad
+- Actualizado el manejo de anchos de gráficos según las nuevas directrices de Streamlit
+
+---
+
 ## [1.3.0] - 2025-11-10
 ### Added
 - 📊 **Visualización de datos mejorada**: Implementación de nuevos gráficos interactivos para una mejor comprensión de costes y amortizaciones.

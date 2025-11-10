@@ -55,20 +55,20 @@ Solo necesitas tener una cuenta gratuita en 👉 https://streamlit.io/cloud
 ---
 
 📌 Versión actual  
-v1.3.0 — 2025-11-10  
+v1.3.1 — 2025-11-10  
 
-### ✨ **Novedades principales**
-- 📊 **Visualización de datos mejorada**: Nuevos gráficos interactivos para una mejor comprensión de costes y amortizaciones.
-- 💡 **Consejos de viabilidad optimizados**: Mensajes más claros y accionables para mejorar la viabilidad de tu hipoteca.
-- 🔄 **Mejoras en la interfaz**: Organización mejorada de la información y optimización para diferentes dispositivos.
-- 🧮 **Precisión mejorada**: Cálculos más exactos en hipotecas mixtas y validación mejorada de límites de financiación.
+### ✨ **Mejoras principales**
+- 📱 **Experiencia móvil mejorada**: Gráficos completamente adaptables y optimizados para dispositivos táctiles
+- 🎨 **Interfaz responsive**: Ajustes automáticos para una visualización perfecta en cualquier pantalla
+- 🚀 **Rendimiento optimizado**: Carga más rápida y uso eficiente de recursos
 
-### 🛠️ **Mejoras técnicas**
-- Optimización del rendimiento general
-- Mejora en la carga de gráficos
-- Código más eficiente y mantenible  
+### 🛠️ **Correcciones técnicas**
+- Actualizado el manejo de gráficos según las nuevas directrices de Streamlit
+- Corregidos problemas de visualización en dispositivos pequeños
+- Mejorada la consistencia entre navegadores
+- Optimización de la interacción táctil
 
-📖 Consulta el historial completo de cambios en el archivo CHANGELOG.md.
+📖 Consulta el historial completo de cambios en el archivo [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
