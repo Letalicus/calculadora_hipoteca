@@ -1,22 +1,30 @@
 # ============================================================
 # 🏠 Calculadora Hipotecaria Profesional
-# Versión: 1.3.1
+# Versión: 1.4.0
 # Fecha: 2025-11-10
 # Autor: Letalicus
 #
 # 🎉 Mejoras en esta versión:
-# - 📱 **Experiencia móvil mejorada**:
-#   - Gráficos totalmente adaptables a cualquier tamaño de pantalla
-#   - Mejoras en la legibilidad en dispositivos móviles
-#   - Ajustes de márgenes y espaciado optimizados
-# - 🛠️ **Correcciones técnicas**:
-#   - Actualizado el manejo de anchos de gráficos según nuevas directrices de Streamlit
-#   - Corregidos problemas de visualización en dispositivos pequeños
-#   - Mejorada la consistencia visual en diferentes navegadores
-# - 📊 **Optimizaciones de rendimiento**:
-#   - Reducción de tiempos de carga en conexiones móviles
-#   - Mejor manejo de recursos gráficos
-#   - Optimización de la interacción táctil
+# - 🆕 **Nuevas características**:
+#   - Guía de usuario mejorada y más intuitiva
+#   - Sección de ayuda expandible para cada modo de la calculadora
+#   - Mejor organización de la información en secciones lógicas
+# 
+# - 🎨 **Mejoras en la interfaz de usuario**:
+#   - Rediseño del sistema de navegación
+#   - Iconografía actualizada y consistente
+#   - Textos más claros y concisos
+#   - Mejor estructura visual de la información
+# 
+# - 🐛 **Correcciones de errores**:
+#   - Solucionado problema con la persistencia del estado entre actualizaciones
+#   - Mejor manejo de valores por defecto
+#   - Corregida la organización de los parámetros en las instrucciones
+# 
+# - 📱 **Optimizaciones móviles**:
+#   - Mejora en la visualización en pantallas pequeñas
+#   - Contenido más accesible y fácil de leer
+#   - Navegación más intuitiva en dispositivos táctiles
 # ============================================================
 
 
@@ -343,7 +351,7 @@ DTI_FAIL = 0.35   # ≤ 35% → Moderado; > 35% → Arriesgado
 # Configuración inicial
 # =========================
 st.set_page_config(page_title="Calculadora Hipotecaria Profesional", page_icon="🏠", layout="wide")
-st.title("🏠 Calculadora Hipotecaria Profesional")
+st.title("🏡 Calculadora Hipotecaria Profesional")
 
 
 
@@ -615,6 +623,17 @@ for k, v in DEFAULTS.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+# Manejar cambio de opciones en el selector de modo
+opciones_modo = [
+    "📚 Guía Completa",
+    "🔎 Descubrir mi precio máximo",
+    "🏠 Comprobar una vivienda concreta"
+]
+
+# Si el modo guardado no está en las opciones actuales, lo reseteamos
+if 'modo' in st.session_state and st.session_state.modo not in opciones_modo:
+    st.session_state.modo = opciones_modo[0]
+
 # === Claves controladas ===
 KEYS_WIDGETS = list(DEFAULTS.keys())
 
@@ -625,11 +644,7 @@ st.sidebar.header("⚙️ Selección de modo")
 
 modo = st.sidebar.radio(
     "Selecciona el modo",
-    [
-        "📘 Instrucciones",
-        "🔎 Descubrir mi precio máximo",
-        "🏠 Comprobar una vivienda concreta"
-    ],
+    opciones_modo,
     key="modo",
     help="Elige si quieres leer la guía, calcular tu precio máximo o comprobar una vivienda concreta."
 )
@@ -638,26 +653,105 @@ modo = st.sidebar.radio(
 # =========================
 # Renderizado según modo
 # =========================
-if modo == "📘 Instrucciones":
+if modo == "📚 Guía Completa":
     # Pantalla inicial de bienvenida con instrucciones y glosario
-    st.header("ℹ️ Guía de uso")
+    st.header("📚 Guía Completa")
+    
+    with st.expander("🌟 Introducción", expanded=True):
+        st.markdown("""
+        ### 📊 Analiza tu Capacidad de Compra
+        
+        Esta herramienta te permite analizar con precisión tu capacidad de compra y simular diferentes escenarios hipotecarios. Con un enfoque profesional y detallado, te ayuda a tomar decisiones informadas sobre tu futura vivienda.
+        """)
+    
+    with st.expander("🔍 Modos de Uso", expanded=True):
+        st.markdown("""
+        ### 🔎 1. Descubrir mi precio máximo
+        **¿Para qué sirve?**  
+        Calcula el precio máximo de vivienda que puedes permitirte según tu capacidad económica actual.
+        
+        **Características principales:**
+        - Calcula automáticamente el precio máximo basado en tus ingresos y ahorros
+        - Valida los criterios bancarios (DTI ≤ 35% y LTV ≤ 80%)
+        - Muestra un desglose detallado de la operación
+        - Permite ajustar todos los parámetros de la hipoteca
+        
+        ### 🏠 2. Comprobar una vivienda concreta
+        **¿Para qué sirve?**  
+        Analiza la viabilidad de una vivienda específica con un precio determinado.
+        
+        **Características principales:**
+        - Simulación detallada de pagos mensuales
+        - Tabla de amortización completa
+        - Análisis de diferentes escenarios de tipos de interés
+        - Desglose de todos los gastos asociados
+        - Cálculo de impuestos y tasas
+        """)
+    
+    with st.expander("📊 Conceptos Clave", expanded=True):
+        st.markdown("""
+        ### 💰 Términos financieros importantes
+        
+        **DTI (Deuda sobre Ingresos)**  
+        Porcentaje de tus ingresos mensuales que se destina al pago de deudas. 
+        - **Límite recomendado:** 35%
+        - **Cálculo:** (Cuota hipoteca + Otras deudas) / Ingresos netos mensuales
+        
+        **LTV (Préstamo sobre Valor de la vivienda)**  
+        Porcentaje del valor de la vivienda que financia el banco.
+        - **Habitual:** 80% (hasta 100% en casos excepcionales)
+        - **Cálculo:** (Importe del préstamo / Valor de tasación) × 100
+        
+        **Tipo de Hipoteca**
+        - **Fija:** Cuota constante durante toda la vida del préstamo
+        - **Variable:** Cuota que varía según la evolución del índice de referencia (normalmente Euríbor)
+        - **Mixta:** Combina un período inicial a tipo fijo con otro a tipo variable
+        """)
+    
+    with st.expander("💡 Consejos Prácticos", expanded=True):
+        st.markdown("""
+        ### 📝 Recomendaciones para usar la calculadora
+        
+        1. **Ingresos realistas**
+           - Incluye pagas extras en el cálculo de ingresos mensuales
+           - Considera solo ingresos estables y recurrentes
+        
+        2. **Gastos adicionales**
+           - Recuerda incluir: notaría, registro, gestoría, tasación, seguros
+           - Considera gastos de reforma o acondicionamiento
+        
+        3. **Margen de seguridad**
+           - Busca viviendas por debajo de tu límite máximo calculado
+           - Prevé posibles subidas de tipos de interés
+        
+        4. **Compara ofertas**
+           - Usa la calculadora para comparar diferentes condiciones hipotecarias
+           - Prueba con distintos plazos y tipos de interés
+        """)
+    
+    with st.expander("❓ Preguntas Frecuentes", expanded=False):
+        st.markdown("""
+        ### ❔ ¿Cómo se calcula el precio máximo?
+        El precio máximo se calcula considerando:
+        - Tu capacidad de pago mensual (DTI ≤ 35%)
+        - El valor de la vivienda (LTV ≤ 80%)
+        - Tus ahorros disponibles para la entrada
+        
+        ### ❔ ¿Qué incluyen los gastos de compra?
+        - Impuestos (ITP o IVA + AJD)
+        - Gastos de notaría y registro
+        - Gestoría y tasación
+        - Seguros iniciales
+        
+        ### ❔ ¿Cómo afecta el tipo de hipoteca a mis pagos?
+        - **Fija:** Pagos estables, ideal si prefieres seguridad
+        - **Variable:** Pagos pueden bajar o subir según el Euríbor
+        - **Mixta:** Combina estabilidad inicial con flexibilidad posterior
+        """)
+    
     st.markdown("""
-    Bienvenido a la **Calculadora Hipotecaria Profesional**.  
-    Esta herramienta te ayuda a entender cuánto puedes permitirte al comprar una vivienda y qué implicaciones tiene tu hipoteca.
-
-    ### 🔧 Modos de uso
-    - **🔎 Descubrir mi precio máximo**: calcula el mayor precio de vivienda que puedes permitir con tu entrada, tu cuota máxima (DTI) y el LTV máximo permitido.
-    - **🏠 Comprobar una vivienda concreta**: introduce un precio y comprueba si tu operación es viable, con desglose de gastos, escenarios de interés y tabla de amortización.
-    - **🔄 Resetear**: restablece todos los valores a los predeterminados.
-
-    ### 📌 Notas importantes
-    - La **entrada** cubre primero los **impuestos y gastos de compra**; el excedente reduce el capital de la hipoteca.
-    - Se validan dos ratios clave:
-      - **LTV (Loan To Value):** porcentaje del valor de la vivienda que financia el banco.
-      - **DTI (Debt To Income):** porcentaje de tus ingresos destinado a deudas.
-    - Los valores en el apartado **⚖️ Gastos asociados** son una **media de lo que cuesta actualmente en España** cada concepto (notaría, registro, gestoría, tasación, seguro).  
-      Puedes ajustarlos si conoces la cifra exacta.
-    - En hipotecas **variables** y **mixtas**, la cuota puede variar según la evolución futura del Euríbor.
+    ---
+    *ℹ️ Recuerda que esta calculadora proporciona estimaciones. Para una valoración exacta, consulta con un asesor financiero.*
     """)
 
     with st.expander("📖 Glosario de términos"):
@@ -989,16 +1083,38 @@ if modo == "🔎 Descubrir mi precio máximo":
     st.subheader("🔎 Descubrir mi precio máximo")
 
     # --- Instrucciones específicas para este modo ---
-    st.info(
-        "En este modo puedes calcular el **precio máximo de vivienda** que puedes permitirte "
-        "según tus ingresos, deudas, entrada y parámetros de hipoteca.\n\n"
-        "👉 **Parámetros mínimos a configurar:** sueldo neto mensual, deudas mensuales, entrada aportada, "
-        "plazo de la hipoteca, tipo de hipoteca **y el Interés fijo (%) que te ofrece el banco**.\n\n"
-        f"✅ El cálculo valida automáticamente que el **DTI ≤ {int(DTI_FAIL*100)} %** y que el **LTV ≤ LTV máximo**, "
-        "por lo que el resultado mostrado es siempre viable bajo criterios bancarios habituales.\n\n"
-        "⚠️ **Nota importante:** el precio máximo mostrado aquí debe entenderse como una **referencia aproximada del límite**. "
-        "Conviene dejar un pequeño margen de seguridad por debajo de este valor."
-    )
+    with st.expander("ℹ️ Instrucciones de uso (haz clic para plegar/desplegar)", expanded=True):
+        st.markdown("""
+        ### Cómo funciona esta calculadora
+        
+        Esta herramienta te ayuda a determinar el **precio máximo de vivienda** que puedes permitirte basado en tu situación financiera y las condiciones hipotecarias.
+        
+        ### 📋 Parámetros necesarios
+        
+        **Datos personales:**
+        - Ingresos netos mensuales (calcula la media mensual de tu sueldo neto anual, incluyendo pagas extras)
+        - Deudas mensuales (tarjetas, préstamos, etc.)
+        - Ahorros disponibles para la entrada
+        
+        **Condiciones de la hipoteca:**
+        - Plazo del préstamo (años)
+        - Tipo de hipoteca (Fija, Variable o Mixta)
+        - Interés correspondiente según el tipo seleccionado
+        
+        ### 🔍 Criterios de viabilidad
+        
+        El cálculo valida automáticamente:
+        - **DTI ≤ 35%** (Deuda sobre Ingresos) - Relación entre tu deuda total y tus ingresos netos mensuales
+        - **LTV ≤ 80%** (Préstamo sobre Valor de la vivienda) - Algunas entidades pueden ofrecer hasta el 100% en casos excepcionales
+        
+        ### 💡 Recomendaciones
+        
+        - El precio mostrado es un **límite teórico máximo**
+        - Se recomienda buscar viviendas **por debajo** de este valor para mayor tranquilidad
+        - Considera gastos adicionales como reformas, muebles o imprevistos
+        
+        ⚠️ **Importante**: Las condiciones reales pueden variar según la entidad financiera y tu perfil de riesgo.
+        """)
 
     # Validación de parámetros mínimos
     if sueldo_neto <= 0:
@@ -1154,19 +1270,38 @@ elif modo == "🏠 Comprobar una vivienda concreta":
     st.subheader("🏠 Comprobar una vivienda concreta")
 
     # --- Instrucciones específicas para este modo ---
-    st.info(
-        "En este modo puedes comprobar la viabilidad de una **vivienda concreta**.\n\n"
-        "👉 **Parámetros mínimos a configurar:**\n"
-        "- Precio de la vivienda (€).\n"
-        "- Sueldo neto mensual.\n"
-        "- Otras deudas mensuales.\n"
-        "- Entrada aportada.\n"
-        "- Plazo de la hipoteca.\n"
-        "- Tipo de hipoteca e interés correspondiente.\n\n"
-        "ℹ️ Con estos datos, la calculadora mostrará: LTV, DTI, coste total de la operación, "
-        "escenarios de interés, consejos de viabilidad y tablas de amortización.\n\n"
-        "⚠️ Nota importante: si introduces el precio exacto calculado en **🔎 Descubrir mi precio máximo**, puede aparecer como no viable por pequeños redondeos o porque el DTI supere mínimamente el 35 %."
-    )
+    with st.expander("ℹ️ Instrucciones de uso (haz clic para plegar/desplegar)", expanded=True):
+        st.markdown("""
+        ### Cómo funciona esta herramienta
+        
+        Analiza la viabilidad de una vivienda específica que ya tengas en mente, mostrándote todos los detalles financieros de la operación.
+        
+        ### 📋 Parámetros necesarios
+        
+        **Datos de la vivienda:**
+        - Precio de la vivienda (€)
+        
+        **Tus datos personales:**
+        - Ingresos netos mensuales
+        - Entrada que puedes aportar
+        - Otras deudas mensuales (tarjetas, préstamos, etc.)
+        
+        **Condiciones de la hipoteca:**
+        - Plazo del préstamo (años)
+        - Tipo de hipoteca (Fija, Variable o Mixta)
+        - Interés correspondiente según el tipo seleccionado
+        
+        ### 📊 Información que obtendrás
+        
+        - **Análisis de viabilidad** (DTI, LTV)
+        - Coste total de la operación
+        - Tabla de amortización detallada
+        - Escenarios de tipos de interés
+        - Desglose de gastos e impuestos
+        - Recomendaciones personalizadas
+        
+        ⚠️ **Nota importante:** Si introduces el precio exacto calculado en **🔎 Descubrir mi precio máximo**, podría aparecer como no viable por pequeños redondeos o porque el DTI supere mínimamente el 35%.
+        """)
 
     # ✅ Validación de parámetros mínimos
     if precio <= 0:
@@ -2629,7 +2764,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                         )
                     )
                     
-                    # Configuración de diseño adaptativo
+                    # Configuración de diseño adaptativo con automargin
                     fig_capital.update_layout(
                         title={
                             'text': "<b>Evolución del Capital Pendiente</b>",
@@ -2640,7 +2775,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                                 'family': 'Arial, sans-serif',
                                 'size': 18
                             },
-                            'y': 0.993
+                            'pad': {'b': 10, 't': 20}  # Espaciado interno para el título
                         },
                         annotations=[
                             dict(
@@ -2657,12 +2792,12 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                                 ),
                                 xanchor='center',
                                 yanchor='bottom',
-                                yshift=4,
+                                yshift=10,
                                 opacity=0.95
                             )
                         ],
-                        height=520,
-                        margin=dict(l=80, r=80, t=62, b=80),
+                        height=540,
+                        margin=dict(l=80, r=80, t=90, b=80),  # Margen superior aumentado
                         font=dict(
                             size=14,
                             color=theme['text_color']
@@ -2723,11 +2858,12 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     
                     # Configuración responsive para el gráfico de capital
                     fig_capital.update_layout(
-                        margin=dict(l=10, r=10, t=30, b=30),
                         autosize=True,
-                        height=400,
                         font=dict(size=12)
                     )
+                    # Habilitar automargin para ejes
+                    fig_capital.update_xaxes(automargin=True)
+                    fig_capital.update_yaxes(automargin=True)
                     st.plotly_chart(
                         fig_capital, 
                         use_container_width=True,
@@ -2804,7 +2940,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                                 'family': 'Arial, sans-serif',
                                 'size': 18
                             },
-                            'y': 0.99
+                            'pad': {'b': 10, 't': 20}  # Espaciado interno para el título
                         },
                         annotations=[
                             dict(
@@ -2821,13 +2957,13 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                                 ),
                                 xanchor='center',
                                 yanchor='bottom',
-                                yshift=4,
+                                yshift=10,
                                 opacity=0.95
                             )
                         ],
-                        height=500,
+                        height=520,
                         barmode='stack',
-                        margin=dict(l=80, r=80, t=90, b=160),
+                        margin=dict(l=80, r=80, t=100, b=160),  # Margen superior aumentado
                         font=dict(size=14, color=theme['text_color']),
                         legend=dict(
                             orientation="h",
@@ -2909,11 +3045,12 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     
                     # Configuración responsive para el gráfico de pagos
                     fig_pagos.update_layout(
-                        margin=dict(l=10, r=10, t=30, b=30),
                         autosize=True,
-                        height=400,
                         font=dict(size=12)
                     )
+                    # Habilitar automargin para ejes
+                    fig_pagos.update_xaxes(automargin=True)
+                    fig_pagos.update_yaxes(automargin=True)
                     st.plotly_chart(
                         fig_pagos, 
                         use_container_width=True,
@@ -3276,6 +3413,6 @@ if MODO_VALIDACION:
 st.divider()
 st.caption("""
 **Autor:** Letalicus  
-**Versión:** 1.3.1  
+**Versión:** 1.4.0  
 **Fecha de actualización:** Noviembre 2025
 """)

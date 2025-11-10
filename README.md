@@ -55,18 +55,23 @@ Solo necesitas tener una cuenta gratuita en 👉 https://streamlit.io/cloud
 ---
 
 📌 Versión actual  
-v1.3.1 — 2025-11-10  
+v1.4.0 — 2025-11-10  
 
-### ✨ **Mejoras principales**
-- 📱 **Experiencia móvil mejorada**: Gráficos completamente adaptables y optimizados para dispositivos táctiles
-- 🎨 **Interfaz responsive**: Ajustes automáticos para una visualización perfecta en cualquier pantalla
-- 🚀 **Rendimiento optimizado**: Carga más rápida y uso eficiente de recursos
+### ✨ **Novedades en esta versión**
+- 🆕 **Guía de usuario mejorada**: Instrucciones más claras y secciones expandibles
+- 🎯 **Navegación intuitiva**: Rediseño del sistema de menús para un acceso más rápido
+- 📱 **Optimización móvil**: Mejoras en la experiencia de usuario en dispositivos táctiles
+
+### 🎨 **Mejoras de usabilidad**
+- 📝 Textos más claros y concisos en toda la aplicación
+- 🖼️ Iconografía consistente y significativa
+- 🏗️ Estructura de información mejor organizada
 
 ### 🛠️ **Correcciones técnicas**
-- Actualizado el manejo de gráficos según las nuevas directrices de Streamlit
-- Corregidos problemas de visualización en dispositivos pequeños
-- Mejorada la consistencia entre navegadores
-- Optimización de la interacción táctil
+- 🔄 Mejor manejo del estado entre actualizaciones
+- 🏗️ Organización optimizada de parámetros en formularios
+- 📊 Mejoras en la visualización de datos
+- 🔄 Actualización de dependencias de seguridad
 
 📖 Consulta el historial completo de cambios en el archivo [CHANGELOG.md](CHANGELOG.md).
 

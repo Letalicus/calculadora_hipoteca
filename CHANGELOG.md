@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+---
+
+## [1.4.0] - 2025-11-10
+### Added
+- 🆕 **Nuevas características**:
+  - Guía de usuario rediseñada y más intuitiva
+  - Secciones de ayuda expandibles para cada modo de la calculadora
+  - Mejor organización visual de la información
+
+### Changed
+- 🎨 **Mejoras en la interfaz de usuario**:
+  - Rediseño del sistema de navegación con iconografía consistente
+  - Textos más claros y concisos en toda la aplicación
+  - Mejor estructura visual de la información
+  - Cambio de iconos para mayor coherencia visual
+
+### Fixed
+- 🐛 **Correcciones de errores**:
+  - Solucionado problema con la persistencia del estado entre actualizaciones
+  - Mejor manejo de valores por defecto en los formularios
+  - Corregida la organización de los parámetros en las instrucciones
+  - Mejor gestión de la caché del navegador
+
+### Technical
+- 📱 **Optimizaciones**:
+  - Mejora en la visualización en dispositivos móviles
+  - Contenido más accesible y fácil de leer
+  - Navegación más intuitiva en pantallas táctiles
+  - Actualización de dependencias de seguridad
+
 ---
 
 ## [1.3.1] - 2025-11-10
