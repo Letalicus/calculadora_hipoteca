@@ -1,22 +1,20 @@
 # ============================================================
 # 🏠 Calculadora Hipotecaria Profesional
-# Versión: 1.2.0
-# Fecha: 2025-11-08
+# Versión: 1.3.0
+# Fecha: 2025-11-10
 # Autor: Letalicus
 #
-# 📌 Resumen de cambios en esta versión:
-# - 🔧 **Corregido cálculo de hipotecas mixtas**: ahora calcula las cuotas
-#   con el plazo completo para ambos tramos, eliminando DTI >100%
-#   y haciendo los cálculos matemáticamente coherentes.
-# - 🧪 **Implementado validador profesional completo**: herramienta
-#   de testing automático que valida 12 escenarios hipotecarios
-#   (fijos, variables y mixtos) con reporte detallado.
-# - 🧹 **Limpieza de código obsoleto**: eliminado completamente el
-#   validador dual antiguo que causaba errores y conflictos.
-# - ✅ **Mejoras en coherencia matemática**: DTI y LTV perfectamente
-#   alineados en todos los escenarios de uso y tipos de hipoteca.
-# - 🎯 **Optimización para release**: código depurado, estable y
-#   listo para producción con validación robusta.
+# 🎉 ¡Nuevo en esta versión!
+# - 📊 **Visualización de datos mejorada**: Nuevos gráficos interactivos para una mejor comprensión de los costes y amortizaciones.
+# - 💡 **Consejos de viabilidad optimizados**: Mensajes más claros y accionables para mejorar la viabilidad de tu hipoteca.
+# - 🎨 **Interfaz renovada**: Mejora en la experiencia de usuario con iconografía consistente y jerarquía visual mejorada.
+# - 🛠️ **Correcciones y mejoras**:
+#   - ✏️ Corregida errata en texto de advertencia: "Modo 1" reemplazado por "🔎 Descubrir mi precio máximo".
+#   - 🔄 Mejorado el manejo de mensajes de error y advertencias.
+#   - 📱 Optimización para diferentes tamaños de pantalla.
+# - 🧮 **Precisión mejorada**:
+#   - Cálculos más precisos en los escenarios de hipoteca mixta.
+#   - Validación mejorada de los límites de financiación.
 # ============================================================
 
 
@@ -27,7 +25,309 @@
 
 import streamlit as st
 from math import isclose
+import plotly.express as px
+import plotly.graph_objects as go
+import plotly.io as pio
+from plotly.subplots import make_subplots
+import pandas as pd
 
+# Estilos CSS personalizados para mejorar la legibilidad
+st.markdown("""
+<style>
+    /* Mejora de contraste para títulos en modo oscuro */
+    .stApp[data-theme="dark"] h1,
+    .stApp[data-theme="dark"] h2,
+    .stApp[data-theme="dark"] h3,
+    .stApp[data-theme="dark"] h4,
+    .stApp[data-theme="dark"] h5,
+    .stApp[data-theme="dark"] h6 {
+        color: #FFFFFF !important;
+    }
+    
+    /* Mejora de contraste para texto en tooltips */
+    .stTooltip {
+        color: #000000 !important;
+    }
+    
+    /* Mejora de contraste para etiquetas de gráficos */
+    .stPlotlyChart .svg-container text {
+        fill: currentColor !important;
+    }
+    
+    /* Asegurar contraste en modo oscuro */
+    [data-theme="dark"] .stPlotlyChart .svg-container text {
+        fill: #FFFFFF !important;
+        opacity: 0.9 !important;
+    }
+    
+    /* Mejorar visibilidad de ejes y etiquetas */
+    [data-theme="dark"] .xtick text, 
+    [data-theme="dark"] .ytick text {
+        fill: #E0E0E0 !important;
+    }
+    
+    /* Asegurar que los contenedores de gráficos tengan el mismo tamaño */
+    .stPlotlyChart {
+        width: 100% !important;
+        height: auto !important;
+    }
+    
+    /* Asegurar que los indicadores de medidor (gauges) se muestren correctamente */
+    .js-plotly-plot {
+        display: flex !important;
+        justify-content: center !important;
+    }
+    
+    /* Asegurar que los contenedores de columnas tengan el mismo ancho */
+    .st-emotion-cache-ocqkz7 {
+        flex: 1 1 0% !important;
+        width: 50% !important;
+    }
+    
+    /* Mejorar visibilidad de leyendas */
+    [data-theme="dark"] .legendtext {
+        fill: #FFFFFF !important;
+    }
+
+    /* Fondo y borde de leyendas en modo oscuro */
+    [data-theme="dark"] .stPlotlyChart .legend .bg,
+    [data-theme="dark"] .stPlotlyChart .legendbg {
+        fill: rgba(22, 26, 33, 0.92) !important;
+        stroke: rgba(148, 163, 184, 0.35) !important;
+    }
+
+    /* Tooltips para modo oscuro */
+    [data-theme="dark"] .stPlotlyChart .hovertext,
+    [data-theme="dark"] .stPlotlyChart .hoverlayer text {
+        fill: #0F172A !important;
+    }
+    
+    /* Encabezado del tooltip (año) */
+    [data-theme="dark"] .stPlotlyChart .hovertext > g:nth-child(1) > text {
+        fill: #0F172A !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+    }
+
+    [data-theme="dark"] .stPlotlyChart .hoverlayer path.bg,
+    [data-theme="dark"] .stPlotlyChart .hoverlayer rect.bg {
+        fill: rgba(22, 26, 33, 0.95) !important;
+        stroke: rgba(148, 163, 184, 0.45) !important;
+    }
+    
+    /* Estilos específicos para la leyenda del gráfico de donut */
+    [data-theme="dark"] .stPlotlyChart .legend .bg,
+    [data-theme="dark"] .stPlotlyChart .legend .legendbox,
+    [data-theme="dark"] .stPlotlyChart .legend .legendfill {
+        fill: rgba(15, 23, 42, 0.98) !important;
+        stroke: rgba(100, 116, 139, 0.5) !important;
+    }
+    
+    [data-theme="dark"] .stPlotlyChart .legend .legendtext {
+        fill: #FFFFFF !important;
+    }
+    
+    /* Forzar estilos para la leyenda del gráfico de donut */
+    [data-theme="dark"] .stPlotlyChart .legend .scrollbox {
+        background-color: rgba(15, 23, 42, 0.98) !important;
+        border: 1px solid rgba(100, 116, 139, 0.5) !important;
+    }
+    
+    [data-theme="dark"] .stPlotlyChart .legend .legendtoggle {
+        cursor: default !important;
+        pointer-events: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Código JavaScript para forzar estilos en tooltips
+st.markdown("""
+<script>
+// Aplicar estilos a tooltips después de que se renderice el gráfico
+setTimeout(function() {
+    // Seleccionar todos los textos de tooltips
+    const tooltipTexts = document.querySelectorAll('.hovertext text');
+    
+    // Aplicar estilos a cada elemento
+    tooltipTexts.forEach(function(el) {
+        el.style.fill = '#0F172A';
+        el.style.fontWeight = '700';
+        el.style.opacity = '1';
+    });
+    
+    // Observar cambios en el DOM para aplicar estilos a nuevos tooltips
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) {
+                    const newTooltips = node.querySelectorAll('.hovertext text');
+                    newTooltips.forEach(function(tooltip) {
+                        tooltip.style.fill = '#0F172A';
+                        tooltip.style.fontWeight = '700';
+                        tooltip.style.opacity = '1';
+                    });
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+}, 1000); // Esperar 1 segundo
+</script>
+""", unsafe_allow_html=True)
+
+# Función auxiliar para manejar temas en los gráficos
+def get_chart_theme():
+    """
+    Obtiene la configuración de tema actual de Streamlit y devuelve los colores correspondientes.
+    """
+    base = None
+    background = None
+    secondary = None
+
+    # Intentar API moderna de Streamlit
+    try:
+        theme_obj = st.get_theme()  # type: ignore[attr-defined]
+        base = getattr(theme_obj, "base", None) or (theme_obj.get("base") if isinstance(theme_obj, dict) else None)
+        background = getattr(theme_obj, "backgroundColor", None) or (theme_obj.get("backgroundColor") if isinstance(theme_obj, dict) else None)
+        secondary = getattr(theme_obj, "secondaryBackgroundColor", None) or (theme_obj.get("secondaryBackgroundColor") if isinstance(theme_obj, dict) else None)
+    except AttributeError:
+        # API alternativa para versiones anteriores
+        base = st.get_option("theme.base") or base
+        background = st.get_option("theme.backgroundColor") or background
+        secondary = st.get_option("theme.secondaryBackgroundColor") or secondary
+    except Exception:
+        pass
+
+    def parse_color_to_rgb(color: str | None):
+        if not color:
+            return None
+        color = color.strip()
+        if color.startswith("rgba") or color.startswith("rgb"):
+            values = color[color.find("(") + 1:color.rfind(")")].split(",")
+            try:
+                r, g, b = [float(v.strip()) for v in values[:3]]
+                return (r, g, b)
+            except ValueError:
+                return None
+        if color.startswith("#"):
+            hex_color = color.lstrip('#')
+            if len(hex_color) == 3:
+                hex_color = ''.join(c * 2 for c in hex_color)
+            if len(hex_color) >= 6:
+                try:
+                    r = int(hex_color[0:2], 16)
+                    g = int(hex_color[2:4], 16)
+                    b = int(hex_color[4:6], 16)
+                    return (float(r), float(g), float(b))
+                except ValueError:
+                    return None
+        return None
+
+    def luminance(color: str | None) -> float | None:
+        rgb = parse_color_to_rgb(color)
+        if not rgb:
+            return None
+        r, g, b = rgb
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+
+    # Inferir si es modo oscuro cuando base no está disponible o no refleja el toggle dinámico
+    base_lum = luminance(background) if background else None
+    secondary_lum = luminance(secondary) if secondary else None
+
+    if base in {"dark", "light"}:
+        is_dark = base == "dark"
+    elif base_lum is not None:
+        is_dark = base_lum < 0.45
+    elif secondary_lum is not None:
+        is_dark = secondary_lum < 0.45
+    else:
+        is_dark = False
+
+    if is_dark:
+        pio.templates.default = "plotly_dark"
+        return {
+            'dark': True,
+            'text_color': '#E5E7EB',
+            'title_color': '#FFFFFF',
+            'subtitle_color': '#D1D5DB',
+            'axis_label_color': '#E5E7EB',
+            'tick_color': '#D1D5DB',
+            'bg_color': background or '#0E1117',
+            'secondary_bg': secondary or '#1E1E1E',
+            'grid_color': 'rgba(255, 255, 255, 0.15)',
+            'colors': [
+                '#4C78A8',
+                '#F58518',
+                '#54A24B',
+                '#E45756',
+                '#B279A2',
+                '#9D755D',
+                '#EECA3B',
+                '#BAB0AC',
+                '#17BECF',
+                '#FF9DA6'
+            ]
+        }
+    else:
+        pio.templates.default = "plotly_white"
+        return {
+            'dark': False,
+            'text_color': '#1A1A1A',
+            'title_color': '#000000',
+            'subtitle_color': '#4B5563',
+            'axis_label_color': '#2D3748',
+            'tick_color': '#4A5568',
+            'bg_color': background or '#FFFFFF',
+            'secondary_bg': secondary or '#F0F2F6',
+            'grid_color': 'rgba(0, 0, 0, 0.15)',
+            'colors': [
+                '#1F77B4',
+                '#FF7F0E',
+                '#2CA02C',
+                '#D62728',
+                '#9467BD',
+                '#8C564B',
+                '#E377C2',
+                '#7F7F7F',
+                '#BCBD22',
+                '#17BECF'
+            ]
+        }
+
+
+
+def color_with_alpha(color: str | None, alpha: float) -> str:
+    """Convierte un color hex/rgb(a) en rgba con la opacidad indicada."""
+    if not color:
+        return f"rgba(0, 0, 0, {alpha})"
+
+    color = color.strip()
+
+    if color.startswith("rgba"):
+        values = color[color.find("(") + 1:color.rfind(")")].split(",")
+        r, g, b = [v.strip() for v in values[:3]]
+        return f"rgba({r}, {g}, {b}, {alpha})"
+
+    if color.startswith("rgb"):
+        values = color[color.find("(") + 1:color.rfind(")")].split(",")
+        r, g, b = [int(float(v.strip())) for v in values[:3]]
+        return f"rgba({r}, {g}, {b}, {alpha})"
+
+    if color.startswith("#"):
+        hex_color = color.lstrip('#')
+        if len(hex_color) == 3:
+            hex_color = ''.join(c * 2 for c in hex_color)
+        try:
+            r = int(hex_color[0:2], 16)
+            g = int(hex_color[2:4], 16)
+            b = int(hex_color[4:6], 16)
+            return f"rgba({r}, {g}, {b}, {alpha})"
+        except ValueError:
+            pass
+
+    # Fallback: devolver color original si no se pudo interpretar
+    return color
 
 
 # =========================
@@ -101,11 +401,30 @@ def es_viable(cuota, cuota_max, ltv_val, ltv_max, dti_val):
 
 
 
+def get_theme_colors():
+    """Obtiene los colores según el tema actual de Streamlit."""
+    theme = get_chart_theme()
+    if theme.get('dark'):
+        return {
+            'background': 'rgba(30, 41, 59, 0.5)',
+            'text': '#F8FAFC',
+            'grid': 'rgba(255, 255, 255, 0.1)',
+            'border': 'rgba(100, 116, 139, 0.5)',
+            'line_colors': ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
+        }
+    else:
+        return {
+            'background': 'rgba(255, 255, 255, 0.7)',
+            'text': '#1E293B',
+            'grid': 'rgba(0, 0, 0, 0.1)',
+            'border': 'rgba(203, 213, 225, 0.8)',
+            'line_colors': ['#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED', '#DB2777']
+        }
+
 # =========================
 # Escenarios de interés (2% a 5% en pasos de 0,5%)
 # =========================
 ESCENARIOS_INTERES_PCT = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]  # porcentaje mostrado al usuario
-
 
 # =========================
 # Cálculos financieros
@@ -588,7 +907,7 @@ st.sidebar.markdown("---")
 st.sidebar.header("⚖️ Gastos asociados")
 notario = st.sidebar.number_input(
     "Notaría (€)", 0.0, step=50.0, key="notario",
-    help="Coste de la escritura pública. Suele rondar 600–1.500 € según complejidad y aranceles."
+    help="Coste de la escritura pública en notaría, según extensión y complejidad (aprox. 600–1.500 €)."
 )
 registro = st.sidebar.number_input(
     "Registro (€)", 0.0, step=50.0, key="registro",
@@ -1031,6 +1350,187 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
 
         # =========================
+        # 📊 Dashboard de Viabilidad (Gauges)
+        # =========================
+        st.subheader("📊 Dashboard de Viabilidad")
+        
+        if not sin_hipoteca and cuota_estimada > 0:
+            theme = get_chart_theme()
+            
+            # Definir colores basados en el tema
+            if theme.get('dark'):
+                bg_color = 'rgba(30, 41, 59, 0.5)'
+                border_color = 'rgba(100, 116, 139, 0.5)'
+                text_color = '#F8FAFC'
+                grid_color = 'rgba(255, 255, 255, 0.1)'
+            else:
+                bg_color = 'rgba(255, 255, 255, 0.7)'
+                border_color = 'rgba(203, 213, 225, 0.8)'
+                text_color = '#1E293B'
+                grid_color = 'rgba(0, 0, 0, 0.1)'
+            
+            # Crear columnas con el mismo ancho
+            col1, col2 = st.columns(2, gap="medium")
+            
+            with col1:
+                # Gráfico DTI
+                fig_dti = go.Figure(go.Indicator(
+                    mode = "gauge+number",
+                    value = dti_val * 100,
+                    domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {
+                        'text': "Ratio de Endeudamiento (DTI)",
+                        'font': {'size': 16, 'color': text_color}
+                    },
+                    gauge = {
+                        'axis': {
+                            'range': [None, 50],
+                            'tickwidth': 1,
+                            'tickcolor': text_color,
+                            'tickfont': {'color': text_color, 'size': 10},
+                            'tickformat': '.0f%',
+                            'tick0': 0,
+                            'dtick': 10
+                        },
+                        'bar': {'color': '#3B82F6'},
+                        'bgcolor': bg_color,
+                        'borderwidth': 1,
+                        'bordercolor': border_color,
+                        'steps': [
+                            {'range': [0, 30], 'color': '#10B981'},  # Verde
+                            {'range': [30, 35], 'color': '#F59E0B'}, # Amarillo
+                            {'range': [35, 50], 'color': '#EF4444'}  # Rojo
+                        ],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 4},
+                            'thickness': 0.75,
+                            'value': dti_val * 100
+                        }
+                    },
+                    number = {
+                        'suffix': "%", 
+                        'font': {'size': 28, 'color': text_color},
+                        'valueformat': '.1f'
+                    }
+                ))
+                
+                # Configuración mínima necesaria
+                fig_dti.update_layout(
+                    margin=dict(l=20, r=20, t=60, b=20),
+                    height=280,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color=text_color, size=12)
+                )
+                
+                st.plotly_chart(fig_dti, use_container_width=True, config={'displayModeBar': False})
+                
+                # Interpretación DTI
+                with st.container(height=90):
+                    if dti_val <= DTI_WARN:
+                        st.markdown("<div style='background-color: #f0fdf4; color: #166534; padding: 0.5rem; border-radius: 0.5rem; margin: 0.25rem 0;'>✅ <strong>DTI Saludable</strong> - Endeudamiento seguro</div>", unsafe_allow_html=True)
+                    elif dti_val <= DTI_FAIL:
+                        st.markdown("<div style='background-color: #fffbeb; color: #854d0e; padding: 0.5rem; border-radius: 0.5rem; margin: 0.25rem 0;'>⚠️ <strong>DTI Moderado</strong> - Zona de atención</div>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<div style='background-color: #fef2f2; color: #991b1b; padding: 0.5rem; border-radius: 0.5rem; margin: 0.25rem 0;'>❌ <strong>DTI Alto</strong> - Riesgo de rechazo</div>", unsafe_allow_html=True)
+            
+            with col2:
+                # Gráfico LTV
+                fig_ltv = go.Figure(go.Indicator(
+                    mode = "gauge+number",
+                    value = ltv_val * 100,
+                    domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {
+                        'text': f"Ratio de Financiación (LTV) - Máx. {ltv_max*100:.0f}%",
+                        'font': {'size': 16, 'color': text_color}
+                    },
+                    gauge = {
+                        'axis': {
+                            'range': [None, 100],
+                            'tickwidth': 1,
+                            'tickcolor': text_color,
+                            'tickfont': {'color': text_color, 'size': 10},
+                            'tickformat': '.0f%',
+                            'tick0': 0,
+                            'dtick': 20
+                        },
+                        'bar': {'color': '#8B5CF6'},
+                        'bgcolor': bg_color,
+                        'borderwidth': 1,
+                        'bordercolor': border_color,
+                        'steps': [
+                            {'range': [0, 60], 'color': '#10B981'},  # Verde
+                            {'range': [60, 80], 'color': '#F59E0B'}, # Amarillo
+                            {'range': [80, 100], 'color': '#EF4444'}  # Rojo
+                        ],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 4},
+                            'thickness': 0.75,
+                            'value': ltv_val * 100
+                        }
+                    },
+                    number = {
+                        'suffix': "%", 
+                        'font': {'size': 28, 'color': text_color},
+                        'valueformat': '.1f'
+                    }
+                ))
+                
+                # Configuración mínima necesaria
+                fig_ltv.update_layout(
+                    margin=dict(l=20, r=20, t=60, b=20),
+                    height=280,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color=text_color, size=12)
+                )
+                
+                st.plotly_chart(fig_ltv, use_container_width=True, config={'displayModeBar': False})
+                
+                # Interpretación LTV
+                with st.container(height=90):
+                    if ltv_val <= 0.60:
+                        st.markdown("<div style='background-color: #f0fdf4; color: #166534; padding: 0.5rem; border-radius: 0.5rem; margin: 0.25rem 0;'>✅ <strong>LTV Excelente</strong> - Buena posición de negociación</div>", unsafe_allow_html=True)
+                    elif ltv_val <= ltv_max:
+                        st.markdown("<div style='background-color: #eff6ff; color: #1e40af; padding: 0.5rem; border-radius: 0.5rem; margin: 0.25rem 0;'>ℹ️ <strong>LTV Estándar</strong> - Dentro de límites bancarios</div>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<div style='background-color: #fef2f2; color: #991b1b; padding: 0.5rem; border-radius: 0.5rem; margin: 0.25rem 0;'>❌ <strong>LTV Alto</strong> - Requiere más entrada</div>", unsafe_allow_html=True)
+            
+            # Resumen de viabilidad
+            st.markdown("---")
+            
+            # Determinar el estado general de viabilidad
+            if dti_val <= DTI_WARN and ltv_val <= ltv_max:
+                viability_status = "🟢 ÓPTIMA"
+                viability_help = "Ambos indicadores están en zona verde. La operación es financieramente saludable."
+            elif dti_val <= DTI_FAIL and ltv_val <= ltv_max:
+                viability_status = "🟡 ACEPTABLE"
+                viability_help = "Algún indicador está en zona amarilla. Revisa los detalles y considera ajustar los parámetros."
+            else:
+                viability_status = "🔴 RIESGO"
+                viability_help = "Uno o ambos indicadores están en zona roja. Se recomienda revisar a fondo la operación."
+            
+            # Mostrar métricas en un layout de 3 columnas
+            col_a, col_b, col_c = st.columns([1, 1, 1])
+            
+            with col_a:
+                st.metric("📊 Estado", viability_status, help=viability_help)
+            
+            with col_b:
+                st.metric("🏠 Cuota/Máx", f"{eur(cuota_estimada)} / {eur(cuota_max)}")
+            
+            with col_c:
+                margen_viability = (cuota_max - cuota_estimada) if cuota_max > 0 else 0
+                st.metric("💰 Margen seguridad", f"{eur(margen_viability)}")
+            
+            st.caption("💡 **Consejo:** Los indicadores verdes indican una posición cómoda, los amarillos requieren atención y los rojos indican la necesidad de ajustar parámetros.")
+        
+        elif sin_hipoteca:
+            st.info("ℹ️ No se requieren indicadores de viabilidad para una compra al contado.")
+        else:
+            st.warning("⚠️ No se pueden generar los indicadores: faltan datos de la operación.")
+
+        # =========================
         # 💵 Coste total de la operación
         # =========================
         import pandas as pd
@@ -1085,6 +1585,381 @@ elif modo == "🏠 Comprobar una vivienda concreta":
         st.caption("El coste inicial incluye precio, impuestos y gastos de compra. "
                    "Los pagos al banco incluyen solo capital e intereses. "
                    "El coste total con hipoteca es la suma de ambos mundos.")
+
+        # =========================
+        # 📊 Dashboard Visual de Costes (Gráfico de Donut)
+        # =========================
+        st.subheader("📊 Dashboard Visual de Costes")
+        
+        if precio > 0:
+            # Preparar datos para el gráfico
+            datos_costes = []
+            etiquetas_costes = []
+            
+            # Precio de la vivienda
+            if precio > 0:
+                datos_costes.append(precio)
+                etiquetas_costes.append(f"🏠 Precio vivienda<br>{eur(precio)}")
+            
+            # Impuestos
+            if impuestos_total > 0:
+                datos_costes.append(impuestos_total)
+                etiquetas_costes.append(f"🧾 Impuestos<br>{eur(impuestos_total)}")
+            
+            # Gastos de formalización
+            if gastos_formalizacion_total > 0:
+                datos_costes.append(gastos_formalizacion_total)
+                etiquetas_costes.append(f"📋 Gastos formalización<br>{eur(gastos_formalizacion_total)}")
+            
+            # Comisión de apertura (si no está financiada)
+            if com_apertura_val > 0 and com_incluida_en_gastos:
+                datos_costes.append(com_apertura_val)
+                etiquetas_costes.append(f"🏦 Comisión apertura<br>{eur(com_apertura_val)}")
+            
+            # Intereses totales
+            if intereses_totales > 0:
+                datos_costes.append(intereses_totales)
+                etiquetas_costes.append(f"💸 Intereses totales<br>{eur(intereses_totales)}")
+            
+            theme = get_chart_theme()
+            subtitle_color = theme.get('subtitle_color', theme['text_color'])
+            
+            # Configuración de colores para tooltips y leyenda
+            if theme.get('dark'):
+                # Para modo oscuro
+                hover_bg = 'rgba(15, 23, 42, 0.98)'  # Fondo oscuro
+                hover_border = 'rgba(100, 116, 139, 0.5)'
+                hover_text_color = '#FFFFFF'  # Texto blanco
+                legend_bg = 'rgba(15, 23, 42, 0.98)'  # Fondo oscuro
+                legend_text_color = '#FFFFFF'  # Texto blanco
+                plotly_template = 'plotly_dark'  # Usar tema oscuro de Plotly
+            else:
+                # Para modo claro
+                hover_bg = color_with_alpha(theme.get('secondary_bg', '#FFFFFF'), 0.98)
+                hover_border = color_with_alpha(theme.get('axis_label_color', theme['text_color']), 0.3)
+                hover_text_color = theme.get('text_color', '#1A1A1A')
+                legend_bg = 'rgba(255, 255, 255, 0.95)'
+                legend_text_color = theme.get('text_color', '#1A1A1A')
+                plotly_template = 'plotly_white'
+                
+            donut_colors = [theme['colors'][i % len(theme['colors'])] for i in range(len(datos_costes))]
+            # Crear gráfico donut con mejor visibilidad
+            fig_costes = go.Figure(data=[go.Pie(
+                labels=etiquetas_costes,
+                values=datos_costes,
+                hole=0.4,
+                marker=dict(colors=donut_colors),
+                textinfo='percent+label',  # Mostrar porcentaje y etiqueta
+                textposition='outside',
+                texttemplate='<b>%{percent:.1%}</b>',  # Porcentaje en negrita
+                insidetextorientation='radial',
+                textfont=dict(
+                    color=theme['text_color'],
+                    size=14,  # Tamaño de fuente más grande
+                    family='Arial, sans-serif'
+                ),
+                hovertemplate=(
+                    f'<b style="color:{hover_text_color}">%{{label}}</b><br>'
+                    f'<span style="color:{hover_text_color}">Importe: %{{value:,.2f}} €</span><br>'
+                    f'<span style="color:{hover_text_color}">Porcentaje: %{{percent:.1%}}</span><extra></extra>'
+                ),
+                pull=[0.02] * len(datos_costes),  # Separación uniforme para todas las secciones
+                outsidetextfont=dict(
+                    color=theme['text_color'],
+                    size=14,  # Tamaño de fuente más grande para el texto externo
+                    family='Arial, sans-serif'
+                ),
+                direction='clockwise',
+                sort=False
+            )])
+            
+            fig_costes.update_layout(
+                title={
+                    'text': "<b>Distribución del Coste Total</b>",
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'font': {
+                        'color': theme.get('title_color', theme['text_color']),
+                        'family': 'Arial, sans-serif',
+                        'size': 18
+                    },
+                    'y': 0.99
+                },
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=40, r=200, t=80, b=40),  # Margen derecho más ancho para las etiquetas
+                uniformtext_minsize=12,  # Tamaño mínimo de texto más grande
+                uniformtext_mode='hide',  # Ocultar textos que no quepan
+                font=dict(size=14, color=theme['text_color']),
+                # Configuración de la leyenda (fuera de la pantalla)
+                legend=dict(
+                    orientation="v",
+                    yanchor="top",
+                    y=1.5,  # Mover la leyenda fuera de la pantalla
+                    xanchor="left",
+                    x=1.05,
+                    bgcolor='rgba(0,0,0,0)',
+                    bordercolor='rgba(0,0,0,0)',
+                    borderwidth=0,
+                    font=dict(
+                        color='rgba(0,0,0,0)',
+                        family='Arial, sans-serif',
+                        size=1  # Tamaño mínimo permitido
+                    ),
+                    itemclick=False,
+                    itemdoubleclick=False,
+                    traceorder='normal',
+                    itemsizing='constant'
+                ),
+                annotations=[
+                    dict(
+                        x=0.5,
+                        y=1.0,
+                        xref='paper',
+                        yref='paper',
+                        text=eur(coste_total),
+                        showarrow=False,
+                        font=dict(
+                            size=14,
+                            color='#F0F0F0' if theme['dark'] else theme.get('subtitle_color', theme['text_color']),
+                            family='Arial, sans-serif, Segoe UI'
+                        ),
+                        xanchor='center',
+                        yanchor='bottom',
+                        yshift=4,
+                        opacity=0.95
+                    )
+                ],
+                hoverlabel=dict(
+                    bgcolor='rgba(15, 23, 42, 0.95)' if theme['dark'] else hover_bg,
+                    bordercolor='rgba(100, 116, 139, 0.5)',
+                    font=dict(
+                        color='#FFFFFF' if theme['dark'] else hover_text_color, 
+                        size=12, 
+                        family="sans-serif"
+                    ),
+                    align="left"
+                ),
+                height=600,
+                showlegend=False  # Desactivar la leyenda nativa
+            )  # Cierre de update_layout
+            
+            # Configuración adicional para el contenedor del gráfico
+            col1, col2 = st.columns([3, 1])
+            
+            # No es necesario actualizar el layout nuevamente, ya está desactivado arriba
+            
+            with col1:
+                # Mostrar el gráfico sin leyenda
+                st.plotly_chart(fig_costes, 
+                             width='stretch',
+                             config={
+                                 'displayModeBar': True,
+                                 'staticPlot': False,
+                                 'displaylogo': False,
+                                 'modeBarButtonsToRemove': ['select2d', 'lasso2d', 'select'],
+                             })
+            
+            with col2:
+                # Inyectar JavaScript para detectar el tema
+                st.markdown("""
+                <script>
+                // Función para detectar el tema actual
+                function getCurrentTheme() {
+                    // Verificar si está en modo oscuro
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        return 'dark';
+                    }
+                    return 'light';
+                }
+                
+                // Aplicar tema al cargar
+                document.addEventListener('DOMContentLoaded', function() {
+                    updateThemeStyles();
+                    
+                    // Escuchar cambios de tema
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeStyles);
+                });
+                
+                // Actualizar estilos basado en el tema
+                function updateThemeStyles() {
+                    const theme = getCurrentTheme();
+                    const root = document.documentElement;
+                    
+                    if (theme === 'dark') {
+                        root.style.setProperty('--legend-bg', 'rgba(30, 41, 59, 0.95)');
+                        root.style.setProperty('--legend-border', 'rgba(51, 65, 85, 0.5)');
+                        root.style.setProperty('--legend-text', '#F8FAFC');
+                        root.style.setProperty('--legend-value', '#CBD5E1');
+                        root.style.setProperty('--legend-divider', 'rgba(51, 65, 85, 0.5)');
+                    } else {
+                        root.style.setProperty('--legend-bg', 'rgba(255, 255, 255, 0.95)');
+                        root.style.setProperty('--legend-border', 'rgba(203, 213, 225, 0.8)');
+                        root.style.setProperty('--legend-text', '#1E293B');
+                        root.style.setProperty('--legend-value', '#475569');
+                        root.style.setProperty('--legend-divider', 'rgba(203, 213, 225, 0.8)');
+                    }
+                }
+                </script>
+                
+                <style>
+                /* Variables CSS para los temas */
+                :root {
+                    --legend-bg: rgba(255, 255, 255, 0.95);
+                    --legend-border: rgba(0, 0, 0, 0.1);
+                    --legend-text: #1E293B;
+                    --legend-value: #475569;
+                    --legend-divider: #E2E8F0;
+                    --legend-hover-bg: rgba(0, 0, 0, 0.03);
+                }
+                
+                /* Ocultar solo la leyenda nativa del gráfico de donut */
+                div[data-testid="stPlotlyChart"]:has(> div > div > svg > g.infolayer > g.legend) .legend,
+                div[data-testid="stPlotlyChart"]:has(> div > div > svg > g.infolayer > g.legend) .legends,
+                div[data-testid="stPlotlyChart"]:has(> div > div > svg > g.infolayer > g.legend) .legendgroup,
+                div[data-testid="stPlotlyChart"]:has(> div > div > svg > g.infolayer > g.legend) .legendtext,
+                div[data-testid="stPlotlyChart"]:has(> div > div > svg > g.infolayer > g.legend) .legendtoggle,
+                div[data-testid="stPlotlyChart"]:has(> div > div > svg > g.infolayer > g.legend) .legendtitle,
+                div[data-testid="stPlotlyChart"]:has(> div > div > svg > g.infolayer > g.legend) .legendpoints {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    border: none !important;
+                }}
+                
+                .legend-item:hover {
+                    background-color: var(--legend-hover-bg);
+                    border: 1px solid var(--legend-border);
+                    border-radius: 8px;
+                /* Estilos para los elementos de la leyenda */
+                .legend-item {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 8px;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    transition: all 0.3s ease;
+                    line-height: 1.4;
+                    color: var(--legend-text);
+                }
+                
+                .legend-color {
+                    width: 16px;
+                    height: 16px;
+                    min-width: 16px;
+                    min-height: 16px;
+                    border-radius: 4px;
+                    margin-right: 10px;
+                    display: inline-block;
+                    vertical-align: middle;
+                    flex-shrink: 0;
+                    border: 1px solid var(--legend-border);
+                    box-sizing: border-box;
+                }
+                
+                .legend-label {
+                    color: var(--legend-text);
+                    font-weight: 500;
+                }
+                
+                .legend-value {
+                    color: var(--legend-value);
+                    margin-left: 4px;
+                    font-weight: 500;
+                    font-size: 0.9em;
+                    opacity: 0.9;
+                }
+                
+                /* Efecto hover sutil */
+                .legend-item:hover {
+                    background-color: var(--legend-hover-bg);
+                }
+                        width: 16px;
+                        height: 16px;
+                        border-radius: 4px;
+                        margin-right: 10px;
+                        flex-shrink: 0;
+                        border: 1px solid {hover_border};
+                    }}
+                    
+                    .legend-value {{
+                        margin-left: 4px;
+                        font-weight: 500;
+                        color: var(--legend-value);
+                        opacity: 0.9;
+                        font-size: 0.9em;
+                        transition: color 0.3s ease;
+                    }}
+                    
+                    /* Los estilos específicos ahora se manejan con JavaScript y variables CSS */
+                    
+                    /* Asegurar que los colores se actualicen suavemente */
+                    @media (prefers-color-scheme: dark) {
+                        /* Valores iniciales para modo oscuro */
+                        :root {
+                            --legend-bg: rgba(30, 41, 59, 0.95);
+                            --legend-border: rgba(51, 65, 85, 0.5);
+                            --legend-text: #F8FAFC;
+                            --legend-value: #CBD5E1;
+                            --legend-divider: rgba(51, 65, 85, 0.5);
+                        }
+                    }
+                    
+                    @media (prefers-color-scheme: light) {
+                        /* Valores iniciales para modo claro */
+                        :root {
+                            --legend-bg: rgba(255, 255, 255, 0.95);
+                            --legend-border: rgba(203, 213, 225, 0.8);
+                            --legend-text: #1E293B;
+                            --legend-value: #475569;
+                            --legend-divider: rgba(203, 213, 225, 0.8);
+                        }
+                    }}
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # Iniciar el contenedor de la leyenda sin título
+                st.markdown("""
+                <div class="custom-legend" id="custom-legend-container">
+                """, unsafe_allow_html=True)
+                
+                # Añadir ítems a la leyenda con valores y colores del donut
+                for i, (label, color, value) in enumerate(zip(etiquetas_costes, donut_colors, datos_costes)):
+                    # Extraer solo el texto sin el HTML para la leyenda
+                    label_text = label.split('<br>')[0]
+                    # Formatear el valor con separadores de miles y 2 decimales
+                    formatted_value = f"{value:,.2f} €"
+                    
+                    # Usar el sistema de temas existente y añadir solo el cuadrado de color
+                    st.markdown(f"""
+                    <div class="legend-item">
+                        <div style="width: 16px; height: 16px; background-color: {color}; 
+                                 border: 1px solid var(--legend-border); border-radius: 4px; 
+                                 margin-right: 10px; display: inline-block; vertical-align: middle;"></div>
+                        <span class="legend-label">{label_text} <span class="legend-value">({formatted_value})</span></span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # Calcular el total sumando los valores de datos_costes
+                total = sum(datos_costes)
+                formatted_total = f"{total:,.2f} €"
+                st.markdown(f"""
+                <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid {hover_border};">
+                    <div class="legend-item" style="font-weight: 600;">
+                        <div style="width: 16px; margin-right: 10px;"></div>
+                        <span>Total: <span class="legend-value">{formatted_total}</span></span>
+                    </div>
+                </div>
+                </div>
+                """, unsafe_allow_html=True)
+            st.caption("📊 Este gráfico muestra la distribución visual de todos los costes de la operación. "
+                      "El tamaño de cada porción representa el peso porcentual de cada concepto en el coste total.")
+        else:
+            st.warning("⚠️ No se puede generar el gráfico de costes porque falta el precio de la vivienda.")
 
         # --- Expander con el desglose completo ---
         with st.expander("📊 Ver desglose completo"):
@@ -1173,6 +2048,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                         cuota_peor_esc = max(cuota_fijo_esc, cuota_var_esc)
                         dti_peor_esc = dti(cuota_peor_esc, deudas_mensuales, sueldo_neto)
                         tramo_peor_esc = "FIJO" if cuota_fijo_esc >= cuota_var_esc else "VARIABLE"
+
                         if es_viable(cuota_peor_esc, cuota_max, ltv_val, ltv_max, dti_peor_esc):
                             st.success(
                                 f"✅ fijo {pct(interes_fijo)} / var {pct(interes_variable_esc)} → peor tramo {tramo_peor_esc}: "
@@ -1187,61 +2063,139 @@ elif modo == "🏠 Comprobar una vivienda concreta":
                     st.caption("En Mixta se valida siempre el tramo más exigente (peor escenario).")
 
         st.caption("DTI = (Cuota hipoteca + otras deudas) / Ingresos netos")
+        
 
         # =========================
         # 💡 Consejos para mejorar la viabilidad
         # =========================
         st.divider()
+        
         st.subheader("💡 Consejos para mejorar la viabilidad")
-        consejos = []
-
+        
+        # Estilos CSS para mejorar la presentación
+        st.markdown("""
+        <style>
+        .consejo-container {
+            border-left: 4px solid #4CAF50;
+            padding: 1rem;
+            margin: 1rem 0;
+            background-color: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .opcion-consejo {
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            background-color: #f0f7ff;
+            border-radius: 6px;
+            border-left: 4px solid #2196F3;
+            transition: all 0.3s ease;
+        }
+        .opcion-consejo:hover {
+            background-color: #e1f0ff;
+            transform: translateX(5px);
+        }
+        .advertencia {
+            background-color: #fff3e0 !important;
+            border-left: 3px solid #ff9800 !important;
+        }
+        .financiacion {
+            background-color: #e8f5e9 !important;
+            border-left: 3px solid #4caf50 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        def mostrar_consejo(tipo, mensaje, es_html=False):
+            if tipo == 'advertencia':
+                st.markdown(f'<div class="consejo-container advertencia">{mensaje if not es_html else mensaje}</div>', unsafe_allow_html=True)
+            elif tipo == 'financiacion':
+                st.markdown(f'<div class="consejo-container financiacion">{mensaje if not es_html else mensaje}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="consejo-container">{mensaje if not es_html else mensaje}</div>', unsafe_allow_html=True)
+        
         if sin_hipoteca:
             st.info("ℹ️ No se generan consejos: no se requiere hipoteca.")
         else:
-            if cuota_estimada <= 0 or precio <= 0 or sueldo_neto <= 0 or entrada_usuario <= 0:
-                st.warning("⚠️ No se pueden generar consejos porque faltan parámetros mínimos.")
-            else:
-                if tipo_hipoteca == "Mixta":
-                    interes_variable_total = euribor + diferencial
-                    cuota_fijo_total = cuota_prestamo(capital_hipoteca, interes_fijo, anos_plazo) or 0.0
-                    cuota_var_total  = cuota_prestamo(capital_hipoteca, interes_variable_total, anos_plazo) or 0.0
+            if tipo_hipoteca == "Mixta":
+                interes_variable_total = euribor + diferencial
+                cuota_fijo_total = cuota_prestamo(capital_hipoteca, interes_fijo, anos_plazo) or 0.0
+                cuota_var_total  = cuota_prestamo(capital_hipoteca, interes_variable_total, anos_plazo) or 0.0
 
-                    dti_fijo = dti(cuota_fijo_total, deudas_mensuales, sueldo_neto)
-                    dti_variable = dti(cuota_var_total, deudas_mensuales, sueldo_neto)
-                    dti_peor = max(dti_fijo, dti_variable)
-                    cuota_peor = max(cuota_fijo_total, cuota_var_total)
+                dti_fijo = dti(cuota_fijo_total, deudas_mensuales, sueldo_neto)
+                dti_variable = dti(cuota_var_total, deudas_mensuales, sueldo_neto)
+                dti_peor = max(dti_fijo, dti_variable)
+                cuota_peor = max(cuota_fijo_total, cuota_var_total)
 
-                    if not es_viable(cuota_peor, cuota_max, ltv_val, ltv_max, dti_peor):
-                        if dti_visible(dti_peor) > DTI_FAIL:
-                            consejos.append("👉 Aporta más entrada, amplía el plazo o negocia condiciones.")
-                        elif DTI_WARN < dti_visible(dti_peor) <= DTI_FAIL:
-                            consejos.append("👉 DTI en zona límite. Revisa estabilidad o avales.")
-                        if ltv_val > ltv_max:
-                            consejos.append("👉 Reduce LTV aportando más entrada o ajustando el precio.")
+                dti_peor_visible = dti_visible(dti_peor)
+                
+                if not es_viable(cuota_peor, cuota_max, ltv_val, ltv_max, dti_peor):
+                    if dti_peor_visible and dti_peor_visible > DTI_FAIL:
+                        with st.container():
+                            st.markdown("### 🔍 Opciones de financiación y asesoramiento")
+                            st.markdown('<div class="opcion-consejo">👉 Aumenta la entrada inicial para reducir el importe a financiar.</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="opcion-consejo">👉 Negocia un tipo de interés más bajo con el banco.</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="opcion-consejo">👉 Considera ampliar el plazo del préstamo para reducir la cuota mensual.</div>', unsafe_allow_html=True)
+                    
+                    elif dti_peor_visible and DTI_WARN < dti_peor_visible <= DTI_FAIL:
+                        with st.container():
+                            st.markdown("### ⚠️ Capacidad de endeudamiento en el límite")
+                            st.markdown("Tu capacidad de endeudamiento está cerca del límite. Te recomendamos:")
+                            st.markdown('<div class="opcion-consejo">• Aportar más dinero para la entrada inicial</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="opcion-consejo">• Reducir el precio objetivo de la vivienda</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="opcion-consejo">• Incorporar un avalista que mejore la evaluación bancaria</div>', unsafe_allow_html=True)
+                    
+                    if ltv_val > ltv_max:
+                        with st.container():
+                            if ltv_val > 0.8:  # Si supera el 80% de financiación
+                                st.markdown("### 📊 Límite de financiación elevado")
+                                st.markdown(f"El banco suele financiar hasta el 80% del valor de la vivienda (solicitado: {ltv_val*100:.1f}%).")
+                                st.markdown("**Opciones para mejorar la viabilidad:**")
+                                st.markdown(f'<div class="opcion-consejo">• Aportar un {((ltv_val - ltv_max)*100):.1f}% adicional de entrada</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="opcion-consejo">• Consultar con otros bancos por condiciones especiales</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="opcion-consejo">• Valorar un avalista o garantías adicionales</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="opcion-consejo">• Buscar una propiedad con un precio más ajustado</div>', unsafe_allow_html=True)
+                            else:
+                                st.markdown("### 📊 Financiación dentro de los límites")
+                                st.markdown(f"El banco financia hasta el {ltv_max*100:.0f}% del valor de la vivienda (solicitado: {ltv_val*100:.1f}%).")
+                else:
+                    st.success("✅ Tu operación es viable con los parámetros actuales (considerando ambos tramos).")
 
-                    if not consejos:
-                        st.success("✅ Tu operación es viable con los parámetros actuales (considerando ambos tramos).")
-                    else:
-                        for c in consejos:
-                            st.warning(c)
-
-                else:  # Fija/Variable
-                    dti_dashboard = dti_val
-                    if not es_viable(cuota_estimada, cuota_max, ltv_val, ltv_max, dti_dashboard):
-                        if dti_visible(dti_dashboard) > DTI_FAIL:
-                            consejos.append("👉 Aumenta entrada o reduce el precio.")
-                            consejos.append("👉 Negocia un interés más bajo.")
-                            consejos.append("👉 Amplía el plazo para bajar la cuota mensual.")
-                        elif DTI_WARN < dti_visible(dti_dashboard) <= DTI_FAIL:
-                            consejos.append("👉 Estás en zona límite de DTI. Considera ampliar plazo o negociar condiciones.")
-                        if ltv_val > ltv_max:
-                            consejos.append("👉 Reduce LTV aportando más entrada o ajustando el precio.")
-
-                    if not consejos:
-                        st.success("✅ Tu operación es viable con los parámetros actuales.")
-                    else:
-                        for c in consejos:
-                            st.warning(c)
+            else:  # Fija/Variable
+                dti_dashboard = dti_val
+                dti_dashboard_visible = dti_visible(dti_dashboard)
+                
+                if not es_viable(cuota_estimada, cuota_max, ltv_val, ltv_max, dti_dashboard):
+                    if dti_dashboard_visible and dti_dashboard_visible > DTI_FAIL:
+                        with st.container():
+                            st.markdown("### 🔍 Opciones de financiación y asesoramiento")
+                            st.markdown('<div class="opcion-consejo">👉 Aumenta la entrada inicial para reducir el importe a financiar.</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="opcion-consejo">👉 Negocia un tipo de interés más bajo con el banco.</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="opcion-consejo">👉 Considera ampliar el plazo del préstamo para reducir la cuota mensual.</div>', unsafe_allow_html=True)
+                    
+                    elif dti_dashboard_visible and DTI_WARN < dti_dashboard_visible <= DTI_FAIL:
+                        with st.container():
+                            st.markdown("### ⚠️ Capacidad de endeudamiento en el límite")
+                            st.markdown("Tu capacidad de endeudamiento está cerca del límite. Te recomendamos:")
+                            st.markdown('<div class="opcion-consejo">• Aportar más dinero para la entrada inicial</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="opcion-consejo">• Reducir el precio objetivo de la vivienda</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="opcion-consejo">• Incorporar un avalista que mejore la evaluación bancaria</div>', unsafe_allow_html=True)
+                    
+                    if ltv_val > ltv_max:
+                        with st.container():
+                            if ltv_val > 0.8:  # Si supera el 80% de financiación
+                                st.markdown("### 📊 Límite de financiación elevado")
+                                st.markdown(f"El banco suele financiar hasta el 80% del valor de la vivienda (solicitado: {ltv_val*100:.1f}%).")
+                                st.markdown("**Opciones para mejorar la viabilidad:**")
+                                st.markdown(f'<div class="opcion-consejo">• Aportar un {((ltv_val - ltv_max)*100):.1f}% adicional de entrada</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="opcion-consejo">• Consultar con otros bancos por condiciones especiales</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="opcion-consejo">• Valorar un avalista o garantías adicionales</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="opcion-consejo">• Buscar una propiedad con un precio más ajustado</div>', unsafe_allow_html=True)
+                            else:
+                                st.markdown("### 📊 Financiación dentro de los límites")
+                                st.markdown(f"El banco financia hasta el {ltv_max*100:.0f}% del valor de la vivienda (solicitado: {ltv_val*100:.1f}%).")
+                else:
+                    st.success("✅ Tu operación es viable con los parámetros actuales.")
 
         # =========================
         # 💸 Simulación de amortización anticipada (opcional)
@@ -1351,7 +2305,7 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
                     df_amort = pd.DataFrame(data)
                     st.dataframe(df_amort, width="stretch")
-                    st.caption("En hipotecas fijas o variables, la cuota se mantiene estable y cada año disminuye capital e intereses.")
+                    st.caption("En hipotecas fijas la cuota se mantiene estable; en variables puede cambiar según el Euríbor. En ambos casos, cada año disminuye la parte de intereses y aumenta la de capital.")
 
                 elif tipo_hipoteca == "Mixta":
                     # Tramo fijo (cuota calculada con plazo total)
@@ -1384,19 +2338,41 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
                     st.markdown("### 🟦 Tramo fijo")
                     st.dataframe(pd.DataFrame(data_fijo), width="stretch")
-                    st.caption("Durante el tramo fijo, la cuota se calcula con el plazo total pactado; queda capital para el tramo variable.")
+                    st.caption("En el tramo fijo, la cuota se calcula con el plazo total de la hipoteca, quedando capital pendiente para el tramo variable.")
 
                     # Tramo variable (plazo restante)
                     plazo_var = max(0, anos_plazo - anios_fijo)
                     if plazo_var > 0 and capital_pendiente > 0:
                         data_var = []
                         r_var = interes_variable / 12 if interes_variable else 0.0
-                        cuota_mensual_var = cuota_prestamo(capital_pendiente, interes_variable, plazo_var) or 0.0
+                        cuota_mensual_var = cuota_prestamo(capital_pendiente, interes_variable, plazo_var) if plazo_var > 0 else 0.0
 
                         for anio in range(1, plazo_var + 1):
                             intereses_anio = 0.0
                             capital_anio = 0.0
                             for mes in range(12):
+                                if dti_peor_visible and dti_peor_visible > DTI_FAIL:
+                                    mensaje_dti = (
+                                        "📊 **Capacidad de endeudamiento superada**\n\n"
+                                        f"Tu ratio DTI ({dti_peor_visible*100:.1f}%) supera el máximo recomendado ({DTI_FAIL*100:.0f}%).\n\n"
+                                        "🔹 **Opciones para mejorar tu perfil financiero:**\n"
+                                        "   • Aumenta la entrada inicial para reducir el importe a financiar\n"
+                                        "   • Considera ampliar el plazo del préstamo para reducir la cuota mensual\n"
+                                        "   • Reduce el precio objetivo de la vivienda\n"
+                                        "   • Mejora tus ingresos o reduce otras deudas"
+                                    )
+                                    consejos.append(mensaje_dti)
+                                elif dti_peor_visible and DTI_WARN < dti_peor_visible <= DTI_FAIL:
+                                    mensaje_dti = (
+                                        "⚠️ **Atención: Límite de endeudamiento cercano**\n\n"
+                                        f"Tu ratio DTI ({dti_peor_visible*100:.1f}%) se acerca al máximo recomendado ({DTI_FAIL*100:.0f}%).\n\n"
+                                        "🔹 **Recomendaciones para mejorar tu perfil:**\n"
+                                        "   • Aporta más dinero para la entrada si es posible\n"
+                                        "   • Valora reducir el precio de la vivienda objetivo\n"
+                                        "   • Considera la opción de un avalista\n"
+                                        "   • Revisa si puedes reducir otras deudas existentes"
+                                    )
+                                    consejos.append(mensaje_dti)
                                 interes_mes = capital_pendiente * r_var
                                 amortizacion_mes = cuota_mensual_var - interes_mes
                                 intereses_anio += interes_mes
@@ -1417,14 +2393,387 @@ elif modo == "🏠 Comprobar una vivienda concreta":
 
                         st.markdown("### 🟩 Tramo variable")
                         st.dataframe(pd.DataFrame(data_var), width="stretch")
-                        st.caption("En el tramo variable, la cuota se recalcula con el nuevo tipo y el plazo restante.")
+                        st.caption("En el tramo variable, la cuota se recalcula con el nuevo tipo de interés y el plazo restante.")
                     else:
                         st.info("ℹ️ El capital quedó totalmente amortizado en el tramo fijo o no hay plazo restante.")
+
         # =========================
-        # 🧮 Resumen compacto (dashboard rápido)
+        # 📈 Evolución del Capital (Gráfico de Área)
+        # =========================
+        st.subheader("📈 Evolución del Capital e Intereses")
+        
+        if not sin_hipoteca and cuota_estimada > 0 and capital_hipoteca > 0:
+            # Generar datos para el gráfico de evolución
+            if tipo_hipoteca in ["Fija", "Variable"]:
+                evolucion_data = []
+                capital_pendiente = capital_hipoteca
+                r = interes_anual / 12 if interes_anual else 0.0
+                cuota_mensual = cuota_estimada
+
+                intereses_acumulados = 0.0
+                capital_amortizado_acumulado = 0.0
+                
+                for anio in range(1, anos_plazo + 1):
+                    intereses_anio = 0.0
+                    capital_anio = 0.0
+                    
+                    for mes in range(12):
+                        if capital_pendiente <= 0:
+                            break
+                        interes_mes = capital_pendiente * r
+                        amortizacion_mes = cuota_mensual - interes_mes
+                        intereses_anio += interes_mes
+                        capital_anio += amortizacion_mes
+                        capital_pendiente -= amortizacion_mes
+                    
+                    intereses_acumulados += intereses_anio
+                    capital_amortizado_acumulado += capital_anio
+                    
+                    evolucion_data.append({
+                        "Año": anio,
+                        "Capital Pendiente": max(0, capital_pendiente),
+                        "Intereses Acumulados": intereses_acumulados,
+                        "Capital Amortizado": capital_amortizado_acumulado,
+                        "Intereses Anuales": intereses_anio,
+                        "Capital Anual": capital_anio
+                    })
+                    
+                    if capital_pendiente <= 0:
+                        break
+                
+                # Crear DataFrame
+                df_evolucion = pd.DataFrame(evolucion_data)
+                
+                # =========================
+                # Sistema de Tabs para Evolución del Capital
+                # =========================
+                tab1, tab2 = st.tabs(["📈 Evolución del Capital", "💰 Distribución de Pagos"])
+                
+                with tab1:
+                    # Obtener configuración de tema
+                    theme = get_chart_theme()
+                    # Configuración de colores para tooltips
+                    if theme.get('dark'):
+                        hover_bg = 'rgba(255, 255, 255, 0.96)'  # Fondo blanco para mejor contraste
+                        hover_border = 'rgba(100, 116, 139, 0.5)'
+                        hover_text_color = '#1A1A1A'  # Texto oscuro para mejor legibilidad
+                    else:
+                        hover_bg = color_with_alpha(theme.get('secondary_bg', '#F0F2F6'), 0.96)
+                        hover_border = color_with_alpha(theme.get('axis_label_color', theme['text_color']), 0.3)
+                        hover_text_color = theme.get('text_color', '#1A1A1A')
+                    tooltip_color = hover_text_color
+                    
+                    # Crear figura con tema adaptativo
+                    fig_capital = go.Figure()
+                    
+                    # Añadir trazo con colores del tema
+                    fig_capital.add_trace(
+                        go.Scatter(
+                            x=df_evolucion["Año"],
+                            y=df_evolucion["Capital Pendiente"],
+                            fill='tozeroy',
+                            mode='lines+markers',
+                            name='Capital Pendiente',
+                            line=dict(color=theme['colors'][0], width=3),
+                            fillcolor=f"rgba({int(theme['colors'][0].lstrip('#')[0:2], 16)}, "
+                                    f"{int(theme['colors'][0].lstrip('#')[2:4], 16)}, "
+                                    f"{int(theme['colors'][0].lstrip('#')[4:6], 16)}, 0.3)",
+                            hovertemplate=(
+                                f"<b style='color:{tooltip_color}'>Año %{{x}}</b><br>"
+                                f"<span style='color:{tooltip_color}'>Capital pendiente: %{{y:,.2f}} €</span><extra></extra>"
+                            )
+                        )
+                    )
+                    
+                    # Configuración de diseño adaptativo
+                    fig_capital.update_layout(
+                        title={
+                            'text': "<b>Evolución del Capital Pendiente</b>",
+                            'x': 0.5,
+                            'xanchor': 'center',
+                            'font': {
+                                'color': theme.get('title_color', theme['text_color']),
+                                'family': 'Arial, sans-serif',
+                                'size': 18
+                            },
+                            'y': 0.993
+                        },
+                        annotations=[
+                            dict(
+                                x=0.5,
+                                y=1.0,
+                                xref='paper',
+                                yref='paper',
+                                text=f"Plazo: {anos_plazo} años | Capital inicial: {eur(capital_hipoteca)}",
+                                showarrow=False,
+                                font=dict(
+                                    size=14,
+                                    color='#F0F0F0' if theme['dark'] else theme.get('subtitle_color', theme['text_color']),
+                                    family='Arial, sans-serif, Segoe UI'
+                                ),
+                                xanchor='center',
+                                yanchor='bottom',
+                                yshift=4,
+                                opacity=0.95
+                            )
+                        ],
+                        height=520,
+                        margin=dict(l=80, r=80, t=62, b=80),
+                        font=dict(
+                            size=14,
+                            color=theme['text_color']
+                        ),
+                        showlegend=False,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        xaxis=dict(
+                            gridcolor=theme['grid_color'],
+                            linecolor=theme.get('axis_label_color', theme['text_color']),
+                            zerolinecolor=theme.get('axis_label_color', theme['text_color']),
+                            showgrid=True,
+                            tickfont=dict(
+                                color=theme.get('tick_color', theme['text_color']),
+                                size=12
+                            ),
+                            title_font=dict(
+                                color=theme.get('axis_label_color', theme['text_color']),
+                                size=13
+                            )
+                        ),
+                        yaxis=dict(
+                            gridcolor=theme['grid_color'],
+                            linecolor=theme.get('axis_label_color', theme['text_color']),
+                            zerolinecolor=theme.get('axis_label_color', theme['text_color']),
+                            showgrid=True,
+                            tickformat=',.0f',
+                            tickprefix='€',
+                            tickfont=dict(
+                                color=theme.get('tick_color', theme['text_color']),
+                                size=12
+                            ),
+                            title_font=dict(
+                                color=theme.get('axis_label_color', theme['text_color']),
+                                size=13
+                            )
+                        ),
+                        hoverlabel=dict(
+                            bgcolor=hover_bg,
+                            bordercolor=hover_border,
+                            font=dict(color=hover_text_color, size=12, family="sans-serif"),
+                            align="left"
+                        ),
+                        # Forzar estilos de tooltip
+                        hoverlabel_font_color=hover_text_color,
+                        hoverlabel_bgcolor=hover_bg,
+                        hoverlabel_bordercolor=hover_border,
+                        # Configuración adicional para tooltips
+                        hoverlabel_namelength=-1,  # Mostrar el nombre completo
+                        # Estilos para el contenedor del tooltip
+                        hoverlabel_align='left',
+                        # Asegurar que el tema oscuro se aplique correctamente
+                        template='plotly_dark' if theme['dark'] else 'plotly'
+                    )
+                    
+                    fig_capital.update_xaxes(title_text="Año", tickfont=dict(size=12))
+                    fig_capital.update_yaxes(title_text="Capital Pendiente (€)", tickfont=dict(size=12))
+                    
+                    st.plotly_chart(fig_capital, width='stretch')
+                    
+                    st.markdown("""
+                    **📊 ¿Qué muestra este gráfico?**
+                    - La línea azul representa tu deuda restante cada año
+                    - El área sombreada muestra la magnitud de la deuda
+                    - Al final del plazo, la deuda llega a cero
+                    
+                    **💡 Información clave:**
+                    - Los primeros años se reduce más lentamente (pagas más intereses)
+                    - Los últimos años se reduce más rápido (pagas más capital)
+                    """)
+                
+                with tab2:
+                    theme = get_chart_theme()
+                    subtitle_color = theme.get('subtitle_color', theme['text_color'])
+                    # Configuración de colores para tooltips
+                    if theme.get('dark'):
+                        hover_bg = 'rgba(255, 255, 255, 0.96)'  # Fondo blanco para mejor contraste
+                        hover_border = 'rgba(100, 116, 139, 0.5)'
+                        hover_text_color = '#1A1A1A'  # Texto oscuro para mejor legibilidad
+                    else:
+                        hover_bg = color_with_alpha(theme.get('secondary_bg', '#F0F2F6'), 0.96)
+                        hover_border = color_with_alpha(theme.get('axis_label_color', theme['text_color']), 0.3)
+                        hover_text_color = theme.get('text_color', '#1A1A1A')
+                    tooltip_color = hover_text_color
+                    fig_pagos = go.Figure()
+                    
+                    fig_pagos.add_trace(
+                        go.Bar(
+                            x=df_evolucion["Año"],
+                            y=df_evolucion["Capital Anual"],
+                            name='Capital Amortizado',
+                            marker_color=theme['colors'][2],
+                            hovertemplate=(
+                                f"<b style='color:{tooltip_color}'>Año %{{x}}</b><br>"
+                                f"<span style='color:{tooltip_color}'>Capital: %{{y:,.2f}} €</span><extra></extra>"
+                            )
+                        )
+                    )
+                    
+                    fig_pagos.add_trace(
+                        go.Bar(
+                            x=df_evolucion["Año"],
+                            y=df_evolucion["Intereses Anuales"],
+                            name='Intereses Pagados',
+                            marker_color=theme['colors'][3],
+                            hovertemplate=(
+                                f"<b style='color:{tooltip_color}'>Año %{{x}}</b><br>"
+                                f"<span style='color:{tooltip_color}'>Intereses: %{{y:,.2f}} €</span><extra></extra>"
+                            )
+                        )
+                    )
+                    
+# No es necesario volver a definir las variables, ya están definidas arriba
+                    
+                    fig_pagos.update_layout(
+                        title={
+                            'text': "<b>Distribución Anual de Pagos</b>",
+                            'x': 0.5,
+                            'xanchor': 'center',
+                            'font': {
+                                'color': theme.get('title_color', theme['text_color']),
+                                'family': 'Arial, sans-serif',
+                                'size': 18
+                            },
+                            'y': 0.99
+                        },
+                        annotations=[
+                            dict(
+                                x=0.5,
+                                y=1.0,
+                                xref='paper',
+                                yref='paper',
+                                text="Capital vs Intereses por año",
+                                showarrow=False,
+                                font=dict(
+                                    size=14,
+                                    color='#F0F0F0' if theme['dark'] else theme.get('subtitle_color', theme['text_color']),
+                                    family='Arial, sans-serif, Segoe UI'
+                                ),
+                                xanchor='center',
+                                yanchor='bottom',
+                                yshift=4,
+                                opacity=0.95
+                            )
+                        ],
+                        height=500,
+                        barmode='stack',
+                        margin=dict(l=80, r=80, t=90, b=160),
+                        font=dict(size=14, color=theme['text_color']),
+                        legend=dict(
+                            orientation="h",
+                            yanchor="top",
+                            y=-0.22,
+                            xanchor="center",
+                            x=0.5,
+                            bgcolor='rgba(0,0,0,0)',
+                            bordercolor='rgba(0,0,0,0)',
+                            borderwidth=0,
+                            font=dict(color=theme['text_color'], size=12),
+                            title=dict(text="")
+                        ),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        xaxis=dict(
+                            gridcolor=theme['grid_color'],
+                            linecolor=theme.get('axis_label_color', theme['text_color']),
+                            zerolinecolor=theme.get('axis_label_color', theme['text_color']),
+                            showgrid=True,
+                            tickfont=dict(
+                                color=theme.get('tick_color', theme['text_color']),
+                                size=12
+                            ),
+                            title_font=dict(
+                                color=theme.get('axis_label_color', theme['text_color']),
+                                size=13
+                            )
+                        ),
+                        yaxis=dict(
+                            gridcolor=theme['grid_color'],
+                            linecolor=theme.get('axis_label_color', theme['text_color']),
+                            zerolinecolor=theme.get('axis_label_color', theme['text_color']),
+                            showgrid=True,
+                            tickfont=dict(
+                                color=theme.get('tick_color', theme['text_color']),
+                                size=12
+                            ),
+                            title_font=dict(
+                                color=theme.get('axis_label_color', theme['text_color']),
+                                size=13
+                            )
+                        ),
+                        hoverlabel=dict(
+                            bgcolor=hover_bg,
+                            bordercolor=hover_border,
+                            font=dict(color=hover_text_color, size=12, family="sans-serif"),
+                            align="left"
+                        ),
+                        hovermode='x unified',
+                        # Forzar estilos de tooltip
+                        hoverlabel_font_color=hover_text_color,
+                        hoverlabel_bgcolor=hover_bg,
+                        hoverlabel_bordercolor=hover_border,
+                        # Configuración adicional para tooltips
+                        hoverlabel_namelength=-1,  # Mostrar el nombre completo
+                        # Estilos para el contenedor del tooltip
+                        hoverlabel_align='left',
+                        # Asegurar que el tema oscuro se aplique correctamente
+                        template='plotly_dark' if theme['dark'] else 'plotly'
+                    )
+                    
+                    # Configuración de tooltips para las barras
+                    fig_pagos.update_traces(
+                        hoverlabel=dict(
+                            bgcolor=hover_bg,
+                            bordercolor=hover_border,
+                            font=dict(color=hover_text_color, size=12, family="sans-serif"),
+                            align='left',
+                            namelength=0
+                        ),
+                        hovertemplate=(
+                            "<span style='color:%s;'><b>Año %%{x}</b><br>"
+                            "%%{data.name}: %%{y:,.2f} €</span><extra></extra>" % hover_text_color
+                        )
+                    )
+                    fig_pagos.update_xaxes(title_text="Año")
+                    fig_pagos.update_yaxes(title_text="Pago Anual (€)" )
+                    
+                    st.plotly_chart(fig_pagos, width='stretch')
+                    
+                    st.markdown("""
+                    **📊 ¿Qué muestra este gráfico?**
+                    - **Barras verdes:** Capital que reduces de tu deuda (dinero "tuyo")
+                    - **Barras rojas:** Intereses que pagas al banco (coste financiero)
+                    - La altura total es tu cuota anual
+                    
+                    **💡 Información clave:**
+                    - Al principio: barras rojas más grandes (pagas más intereses)
+                    - Al final: barras verdes más grandes (pagas más capital)
+                    - Esta es la razón por la que las amortizaciones anticipadas son más efectivas al principio
+                    """)
+                
+            elif tipo_hipoteca == "Mixta":
+                st.info("ℹ️ El gráfico de evolución detallado para hipotecas mixtas no está disponible. "
+                       "Puedes ver la evolución en las tablas de amortización de los tramos fijo y variable.")
+        else:
+            if sin_hipoteca:
+                st.info("No hay gráfico de evolución: no existe hipoteca (compra al contado).")
+            else:
+                st.warning("No se puede generar el gráfico de evolución porque faltan parámetros válidos.")
+
+        # =========================
+        # Resumen compacto
         # =========================
         st.divider()
-        st.subheader("🧮 Resumen compacto")
+        st.subheader("Resumen compacto")
 
         if sin_hipoteca:
             col1, col2, col3, col4 = st.columns(4)
@@ -1749,6 +3098,6 @@ if MODO_VALIDACION:
 st.divider()
 st.caption("""
 **Autor:** Letalicus  
+**Versión:** 1.3.0  
 **Fecha de actualización:** Noviembre 2025
 """)
-

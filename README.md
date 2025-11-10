@@ -55,27 +55,20 @@ Solo necesitas tener una cuenta gratuita en 👉 https://streamlit.io/cloud
 ---
 
 📌 Versión actual  
-v1.2.0 — 2025-11-08  
+v1.3.0 — 2025-11-10  
 
 ### ✨ **Novedades principales**
-- 🔧 **Corregido cálculo de hipotecas mixtas**: ahora calcula las cuotas con el plazo completo para ambos tramos, eliminando DTI >100% y haciendo los cálculos matemáticamente coherentes.
-- 🧪 **Implementado validador profesional completo**: nueva herramienta de testing automático que valida 12 escenarios hipotecarios (fijos, variables y mixtos) con reporte detallado de errores y advertencias.
-- 🧹 **Código limpio y optimizado**: eliminado código obsoleto, depurados errores y optimizado para producción.
-- ✅ **Mejoras en coherencia matemática**: DTI y LTV perfectamente alineados en todos los escenarios de uso y tipos de hipoteca.
+- 📊 **Visualización de datos mejorada**: Nuevos gráficos interactivos para una mejor comprensión de costes y amortizaciones.
+- 💡 **Consejos de viabilidad optimizados**: Mensajes más claros y accionables para mejorar la viabilidad de tu hipoteca.
+- 🔄 **Mejoras en la interfaz**: Organización mejorada de la información y optimización para diferentes dispositivos.
+- 🧮 **Precisión mejorada**: Cálculos más exactos en hipotecas mixtas y validación mejorada de límites de financiación.
 
 ### 🛠️ **Mejoras técnicas**
-- Validación robusta de escenarios hipotecarios
-- Precisión mejorada en fórmulas matemáticas
-- Código estable y listo para producción   
+- Optimización del rendimiento general
+- Mejora en la carga de gráficos
+- Código más eficiente y mantenible  
 
 📖 Consulta el historial completo de cambios en el archivo CHANGELOG.md.
-
----
-
-## 👤 Autor
-
-**Letalicus**  
-📍 España
 
 ---
 
@@ -85,3 +78,11 @@ Este proyecto se distribuye bajo la licencia **MIT**.
 Consulta el archivo LICENSE para más detalles.
 
 ---
+
+## 👤 Autor
+
+**Letalicus**  
+📍 España
+
+
+

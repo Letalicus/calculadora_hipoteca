@@ -1,8 +1,30 @@
 # 📑 CHANGELOG — Calculadora Hipotecaria Profesional
 
 ## [Unreleased]
+
+---
+
+## [1.3.0] - 2025-11-10
+### Added
+- 📊 **Visualización de datos mejorada**: Implementación de nuevos gráficos interactivos para una mejor comprensión de costes y amortizaciones.
+- 💡 **Consejos de viabilidad optimizados**: Mensajes más claros y accionables para mejorar la viabilidad de la hipoteca.
+
+### Changed
+- 🔄 **Mejoras en la interfaz**:
+  - Mejor organización de la información en secciones claramente diferenciadas.
+  - Optimización para diferentes tamaños de pantalla.
+
 ### Fixed
-- ✏️ **Corregida errata en texto de advertencia de app.py**: sustituido “Modo 1” por el título correcto **🔎 Descubrir mi precio máximo**, manteniendo la explicación sobre redondeos y DTI >35 %.
+- ✏️ **Corrección de textos**: Sustituido "Modo 1" por el título correcto "🔎 Descubrir mi precio máximo".
+- 🧮 **Precisión mejorada**:
+  - Cálculos más precisos en escenarios de hipoteca mixta.
+  - Validación mejorada de los límites de financiación.
+  - Corrección de mensajes de error y advertencias.
+
+### Technical
+- 📱 **Optimizaciones de rendimiento**:
+  - Mejora en la carga de gráficos.
+  - Optimización del código para mejor rendimiento general.
 
 ---
 
