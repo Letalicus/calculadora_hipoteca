@@ -2,6 +2,3 @@ User-agent: *
 Allow: /
 
 Sitemap: https://letalicus.github.io/calculadora_hipoteca/sitemap.xml
-
-# Puedes añadir crawl-delay si lo deseas para reducir carga
-# Crawl-delay: 10

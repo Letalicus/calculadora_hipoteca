@@ -1,38 +1,185 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Calculadora Hipoteca Pro</title>
-    <meta name="google-site-verification" content="FIxcTVpGNwC9gZbKOIhIuHXIoX8EuVO83vNjx8bjqsI">
-    <meta name="msvalidate.01" content="A447AEA571A2277C69045692A1777B84">
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 2rem;
-        background: #0f172a;
-        color: #f8fafc;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-      }
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora Hipoteca Pro</title>
+  <meta name="description"
+    content="Calculadora Hipoteca Pro te permite comparar hipotecas fijas, variables y mixtas con tablas de amortización detalladas y métricas clave como LTV y DTI.">
+  <meta name="google-site-verification" content="FIxcTVpGNwC9gZbKOIhIuHXIoX8EuVO83vNjx8bjqsI">
+  <meta name="msvalidate.01" content="A447AEA571A2277C69045692A1777B84">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: linear-gradient(145deg, #0f172a, #1e293b);
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --muted: #cbd5f5;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+      padding: 3rem 1.5rem;
+    }
+
+    main {
+      max-width: 860px;
+      width: 100%;
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 3rem;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(6px);
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      margin: 0 0 0.75rem;
+    }
+
+    header p {
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      color: var(--muted);
+      margin: 0 0 2rem;
+    }
+
+    .features {
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin: 2.5rem 0;
+    }
+
+    .feature {
+      padding: 1.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .feature h3 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.15rem;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cta a.primary {
+      background: var(--accent);
+      color: #0f172a;
+      padding: 0.85rem 1.8rem;
+      border-radius: 999px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 12px 25px rgba(56, 189, 248, 0.35);
+    }
+
+    .cta a.primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 30px rgba(56, 189, 248, 0.5);
+    }
+
+    .cta span {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: rgba(226, 232, 240, 0.75);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: space-between;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    @media (max-width: 640px) {
       main {
-        max-width: 680px;
+        padding: 2.25rem 1.75rem;
+      }
+
+      .cta {
+        flex-direction: column;
+        align-items: stretch;
         text-align: center;
       }
-      a {
-        color: #38bdf8;
+
+      .cta a.primary {
+        width: 100%;
+        display: inline-block;
       }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1>Calculadora Hipotecaria Profesional</h1>
-      <p>Esta página sirve para verificación y redirección. Consulta la aplicación principal en Streamlit:</p>
-      <p><a href="https://calculadorahipotecapro.streamlit.app/">https://calculadorahipotecapro.streamlit.app/</a></p>
-      <p>Robots y sitemap: <a href="/robots.txt">robots.txt</a> · <a href="/sitemap.xml">sitemap.xml</a></p>
-    </main>
-  </body>
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <header>
+      <h1>Calculadora Hipoteca Pro</h1>
+      <p>Planifica tu compra con simulaciones detalladas de hipotecas fijas, variables y mixtas. Calcula cuotas, compara
+        escenarios y obtén
+        métricas como LTV y DTI en segundos.</p>
+    </header>
+
+    <section class="features">
+      <article class="feature">
+        <h3>Simulaciones completas</h3>
+        <p>Introduce capital, plazo y tipo de interés para generar tablas de amortización con desglose de intereses y
+          capital mes a mes.</p>
+      </article>
+      <article class="feature">
+        <h3>Indicadores clave</h3>
+        <p>Evalúa tu capacidad con ratios LTV y DTI, gastos asociados y coste total de la operación antes de decidir.
+        </p>
+      </article>
+      <article class="feature">
+        <h3>Experiencia optimizada</h3>
+        <p>Diseño responsive, tema oscuro/claro y gráficos interactivos para entender tu hipoteca de un vistazo.</p>
+      </article>
+    </section>
+
+    <div class="cta">
+      <a class="primary" href="https://calculadorahipotecapro.streamlit.app/" target="_blank" rel="noopener">Abrir
+        calculadora</a>
+      <span>¿Quieres saber más? Consulta el código fuente en <a href="https://github.com/Letalicus/calculadora_hipoteca"
+          rel="noopener">GitHub</a>.</span>
+    </div>
+
+    <footer>
+      <span>© 2025 Calculadora Hipoteca Pro — Herramienta educativa desarrollada por Letalicus.</span>
+      <span><a href="/robots.txt" rel="nofollow">robots.txt</a> · <a href="/sitemap.xml"
+          rel="nofollow">sitemap.xml</a></span>
+    </footer>
+  </main>
+</body>
+
 </html>
