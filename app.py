@@ -36,6 +36,7 @@ import html
 from math import isclose
 
 import streamlit as st
+import streamlit.components.v1 as components
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -49,6 +50,7 @@ SITE_URL = "https://calculadorahipotecapro.streamlit.app"
 # Sustituye estos por los códigos que Google/Bing te den en Search Console / Bing Webmaster
 GOOGLE_SITE_VERIFICATION = "dxyq3A1a8_xoOr2UUrIg5liMyVTHOZc-GeyoHkOdmKA"
 BING_SITE_VERIFICATION = "A447AEA571A2277C69045692A1777B84"
+GA_MEASUREMENT_ID = "G-PSYB2HDX3R"
 
 # Detectar query params al inicio para servir robots / sitemap de forma dinámica
 _query_params = st.query_params
@@ -112,6 +114,31 @@ _meta_html = f"""
 """
 # Inyectar los metadatos en la página (Streamlit los insertará en el body, eso es suficiente para verificación SEO)
 st.markdown(_meta_html, unsafe_allow_html=True)
+
+# Integración de Google Analytics 4 (GA4)
+if GA_MEASUREMENT_ID:
+    ga_snippet = """
+<!-- Google tag (gtag.js) -->
+<script>
+  (function() {
+    const parentDoc = window.parent.document;
+    if (!parentDoc.querySelector('script[data-ga-id="[GA_ID]"]')) {
+      const gtagScript = parentDoc.createElement('script');
+      gtagScript.setAttribute('data-ga-id', '[GA_ID]');
+      gtagScript.async = true;
+      gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=[GA_ID]';
+      parentDoc.head.appendChild(gtagScript);
+    }
+
+    window.parent.dataLayer = window.parent.dataLayer || [];
+    function gtag(){window.parent.dataLayer.push(arguments);}
+    window.parent.gtag = gtag;
+    gtag('js', new Date());
+    gtag('config', '[GA_ID]');
+  })();
+</script>
+""".replace("[GA_ID]", GA_MEASUREMENT_ID)
+    components.html(ga_snippet, height=0)
 # --- FIN: SEO / robots / sitemap dinámico ---
 
 
