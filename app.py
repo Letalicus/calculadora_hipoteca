@@ -31,15 +31,89 @@
 
 
 
-
+import datetime
+import html
+from math import isclose
 
 import streamlit as st
-from math import isclose
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 import pandas as pd
+
+# --- INICIO: SEO / robots / sitemap dinámico ---
+# URL pública de la app (tu dominio Streamlit)
+SITE_URL = "https://calculadorahipotecapro.streamlit.app"
+
+# Sustituye estos por los códigos que Google/Bing te den en Search Console / Bing Webmaster
+GOOGLE_SITE_VERIFICATION = "dxyq3A1a8_xoOr2UUrIg5liMyVTHOZc-GeyoHkOdmKA"
+BING_SITE_VERIFICATION = "A447AEA571A2277C69045692A1777B84"
+
+# Detectar query params al inicio para servir robots / sitemap de forma dinámica
+_query_params = st.query_params
+
+# Servir robots.txt en: https://.../?robots=1
+if "robots" in _query_params:
+    robots_txt = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        f"Sitemap: {SITE_URL}?sitemap=1\n"
+        "\n"
+        "# Nota: si prefieres, publica sitemap.xml en GitHub Pages y cambia la URL aquí."
+    )
+    # Se muestra plain text para que los bots puedan leerlo
+    st.text(robots_txt)
+    st.stop()
+
+# Servir sitemap.xml en: https://.../?sitemap=1
+if "sitemap" in _query_params:
+    lastmod = datetime.date.today().isoformat()
+    sitemap_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>{html.escape(SITE_URL)}</loc>
+    <lastmod>{lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
+"""
+    # Mostramos el XML en texto plano
+    st.text(sitemap_xml)
+    st.stop()
+
+# Meta tags + OpenGraph + JSON-LD (se inyectan en el body; Streamlit permite esto mediante unsafe_allow_html)
+_meta_html = f"""
+<!-- SEO basico -->
+<meta name="description" content="Calculadora Hipotecaria Profesional — simula cuotas, LTV, DTI e impuestos rápidamente. Ideal para comparar escenarios de hipoteca en España.">
+<meta name="keywords" content="calculadora hipoteca, simulador hipoteca, LTV, DTI, hipoteca España, calculadora hipoteca online">
+<link rel="canonical" href="{SITE_URL}">
+<meta name="google-site-verification" content="{GOOGLE_SITE_VERIFICATION}">
+<meta name="msvalidate.01" content="{BING_SITE_VERIFICATION}">
+
+<!-- Open Graph (Facebook / Social preview) -->
+<meta property="og:title" content="Calculadora Hipotecaria Profesional">
+<meta property="og:description" content="Simula cuotas, LTV y DTI. Compara hipotecas reales y planifica tu compra.">
+<meta property="og:url" content="{SITE_URL}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Calculadora Hipoteca Pro">
+
+<!-- JSON-LD básico (Organization + WebSite) -->
+<script type="application/ld+json">
+{{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Calculadora Hipotecaria Profesional",
+  "url": "{SITE_URL}",
+  "description": "Herramienta online para simular hipotecas y estimar viabilidad (LTV, DTI, gastos)."
+}}
+</script>
+"""
+# Inyectar los metadatos en la página (Streamlit los insertará en el body, eso es suficiente para verificación SEO)
+st.markdown(_meta_html, unsafe_allow_html=True)
+# --- FIN: SEO / robots / sitemap dinámico ---
+
 
 # Estilos CSS personalizados para mejorar la legibilidad
 st.markdown("""
